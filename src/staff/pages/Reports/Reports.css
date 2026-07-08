@@ -1,0 +1,152 @@
+/* frontend/src/staff/pages/Reports/Reports.css */
+body {
+  background: #eef1f7;
+  font-family: Inter, system-ui, sans-serif;
+}
+
+/* LAYOUT */
+.dashboard {
+  padding: 22px;
+}
+
+/* TOP METRICS */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 18px;
+}
+
+.stat-card {
+  background: #fff;
+  border-radius: 14px;
+  padding: 18px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.04);
+}
+
+.stat-card p {
+  font-size: 13px;
+  color: #777;
+  margin-bottom: 6px;
+}
+
+.stat-card h2 {
+  margin: 0;
+  font-size: 30px;
+}
+
+.green {
+  color: #2ecc71;
+}
+
+.red {
+  color: #e74c3c;
+}
+
+/* GRID */
+.grid {
+  margin-top: 26px;
+  display: grid;
+  grid-template-columns: 1.2fr 2fr 1.2fr;
+  gap: 20px;
+}
+
+.card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 18px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.04);
+}
+
+/* ALERTS */
+.alert {
+  padding: 12px;
+  border-radius: 10px;
+  margin-bottom: 12px;
+  font-size: 14px;
+}
+
+.alert.high {
+  border-left: 4px solid #e74c3c;
+}
+
+.alert.medium {
+  border-left: 4px solid #f39c12;
+}
+
+/* CHARTS */
+.chart-title {
+  font-size: 14px;
+  margin-bottom: 10px;
+  color: #555;
+}
+
+.line {
+  fill: none;
+  stroke: #6a5af9;
+  stroke-width: 3;
+}
+
+.line.white {
+  stroke: #ffffff;
+}
+
+/* BOTTOM */
+.bottom {
+  margin-top: 26px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+.gradient {
+  background: linear-gradient(135deg, #6a5af9, #8f7bff);
+  color: white;
+}
+
+/* GAUGE */
+.gauge {
+  text-align: center;
+}
+
+.gauge h1 {
+  margin: 10px 0;
+  font-size: 38px;
+}
+
+/* ===== YEAR BARS ===== */
+.bar.second {
+  fill: #4c6ef5; /* blue */
+}
+
+.bar.third {
+  fill: #845ef7; /* purple */
+}
+
+.bar.fourth {
+  fill: #20c997; /* teal */
+}
+
+/* LEGEND */
+.legend {
+  display: flex;
+  justify-content: space-around;
+  margin-top: 8px;
+  font-size: 13px;
+}
+
+.legend span::before {
+  content: "■";
+  margin-right: 6px;
+}
+
+.legend .second::before {
+  color: #4c6ef5;
+}
+
+.legend .third::before {
+  color: #845ef7;
+}
+
+.legend .fourth::before {
+  color: #20c997;
+}

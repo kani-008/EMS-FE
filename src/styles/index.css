@@ -1,0 +1,19 @@
+/* frontend/src/staff/styles/index.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-slate-50 text-slate-800 font-sans antialiased;
+    @apply font-sans;
+  }
+}
+input[type="checkbox"] {
+  accent-color: #cbd5e1; /* slate-300 */
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  border-radius: 4px;
+}
+

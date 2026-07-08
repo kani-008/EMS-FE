@@ -1,0 +1,282 @@
+// frontend/src/admin/components/UserDetailsModal.jsx
+// Handles both edit (staff only) and info modes.
+// Edit mode: calls PUT /api/admin/update-staff/:facultyId via HTTP-only cookie.
+// Departments loaded from API — no hardcoded lists.
+
+import { useState, useEffect } from "react";
+import Button from "../../components/Button";
+
+function ro(val) {
+  return String(val ?? "-").trim() || "-";
+}
+
+// ── INFO MODE ─────────────────────────────────────────────────────────────────
+function InfoRow({ label, value }) {
+  return (
+    <div>
+      <p className="form-label">{label}</p>
+      <p className="form-value">{ro(value)}</p>
+    </div>
+  );
+}
+
+// ── EDIT MODE ─────────────────────────────────────────────────────────────────
+function EditStaffModal({ user, onClose, onSaved }) {
+  const [departments, setDepartments] = useState([]);
+  const [staffRoles, setStaffRoles] = useState([]);
+  const [firstName, setFirstName] = useState(user.first_name || "");
+  const [lastName, setLastName] = useState(user.last_name || "");
+  const [department, setDepartment] = useState(user.department || "");
+  const [role, setRole] = useState(user.userRole || "");
+  const [batch, setBatch] = useState(
+    String(user.batchYear ?? user.batchDisplay ?? user.batch ?? "").replace(/^N\/A$/i, "")
+  );
+  const [currentYear, setCurrentYear] = useState(
+    user.current_year != null ? String(user.current_year) : ""
+  );
+  const [loading, setLoading] = useState(false);
+
+  // Academic year preview: derived from batch + course (never stored)
+  const courseDuration = String(user.course || "").startsWith("M") ? 2 : 4;
+  const batchNum = parseInt(batch, 10);
+  const academicYear =
+    !isNaN(batchNum) && String(batchNum).length === 4
+      ? `${batchNum}–${batchNum + courseDuration}`
+      : "—";
+
+  useEffect(() => {
+    Promise.all([
+      fetch("/api/admin/departments", { credentials: "include" }).then((r) => r.json()),
+      fetch("/api/admin/staff-roles", { credentials: "include" }).then((r) => r.json()),
+    ]).then(([dd, rd]) => {
+      if (dd.success) setDepartments(dd.data || []);
+      if (rd.success) setStaffRoles(rd.data || []);
+    }).catch(() => { });
+  }, []);
+
+  const handleSave = async () => {
+    if (!firstName.trim()) { alert("First name is required"); return; }
+    if (!department) { alert("Department is required"); return; }
+    if (!role) { alert("Role is required"); return; }
+
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/admin/update-staff/${user.userId}`, {
+        method: "PUT",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
+          department,
+          role,
+          batch: batch.trim() || null,
+          currentYear: currentYear ? parseInt(currentYear, 10) : null,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Update failed");
+      alert(`${user.userId} updated successfully`);
+      onSaved();
+      onClose();
+    } catch (err) {
+      alert("Error: " + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 overflow-y-auto py-10" onClick={onClose}>
+      <div className="w-[680px] bg-white rounded-xl shadow-lg p-6 my-auto" onClick={(e) => e.stopPropagation()}>
+        <h2 className="text-sm font-semibold text-blue-800 mb-1">EDIT STAFF USER</h2>
+        <p className="text-xs text-slate-500 mb-4">
+          Staff ID <span className="font-mono font-bold text-blue-700">{user.userId}</span> is
+          immutable and cannot be changed.
+        </p>
+
+        <div className="grid grid-cols-2 gap-4 text-sm">
+
+          {/* Staff ID — read-only */}
+          <div>
+            <label className="form-label">Staff ID</label>
+            <input
+              readOnly
+              value={user.userId || "-"}
+              className="w-full border border-slate-200 rounded-md px-3 py-2 bg-slate-100 text-slate-700 font-mono cursor-not-allowed"
+            />
+          </div>
+
+          {/* Role — editable dropdown */}
+          <div>
+            <label className="form-label">Role</label>
+            <select
+              value={role}
+              onChange={(e) => setRole(e.target.value)}
+              className="w-full border border-slate-300 rounded-md px-3 py-2 focus:outline-none"
+            >
+              <option value="" disabled>Choose Role</option>
+              {staffRoles.map((r) => (
+                <option key={r.user_role_id} value={r.user_role}>
+                  {r.user_role}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* First Name */}
+          <div>
+            <label className="form-label">First Name</label>
+            <input
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              className="w-full border border-slate-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              placeholder="First name"
+            />
+          </div>
+
+          {/* Last Name */}
+          <div>
+            <label className="form-label">Last Name</label>
+            <input
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              className="w-full border border-slate-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              placeholder="Last name"
+            />
+          </div>
+
+          {/* Department */}
+          <div>
+            <label className="form-label">Department</label>
+            <select
+              value={department}
+              onChange={(e) => setDepartment(e.target.value)}
+              className="w-full border border-slate-300 rounded-md px-3 py-2 focus:outline-none"
+            >
+              <option value="" disabled>Choose Department</option>
+              {departments.map((d) => (
+                <option key={d.department_id} value={d.department_name}>
+                  {d.department_name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Batch */}
+          <div>
+            <label className="form-label">Batch</label>
+            <input
+              value={batch}
+              onChange={(e) => setBatch(e.target.value)}
+              className="w-full border border-slate-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              placeholder="e.g. 2023"
+            />
+          </div>
+
+          {/* Academic Year preview — read-only, derived from batch */}
+          <div>
+            <label className="form-label">
+              Academic Year <span className="font-normal text-slate-400">(auto)</span>
+            </label>
+            <input
+              readOnly
+              value={academicYear}
+              className="w-full border border-slate-200 rounded-md px-3 py-2 bg-slate-50 text-slate-700 cursor-not-allowed"
+            />
+          </div>
+
+          {/* Current Year (study year) — editable */}
+          <div>
+            <label className="form-label">Current Year</label>
+            <select
+              value={currentYear}
+              onChange={(e) => setCurrentYear(e.target.value)}
+              className="w-full border border-slate-300 rounded-md px-3 py-2 focus:outline-none"
+            >
+              <option value="">— None —</option>
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+            </select>
+          </div>
+
+        </div>
+
+        <div className="flex justify-end gap-3 mt-6">
+          <Button
+            label={loading ? "Saving…" : "Save"}
+            variant="primary"
+            onClick={handleSave}
+            disabled={loading}
+          />
+          <Button
+            label="Cancel"
+            variant="danger"
+            onClick={onClose}
+            disabled={loading}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── MAIN EXPORT ───────────────────────────────────────────────────────────────
+const UserDetailsModal = ({ user, mode, onClose, onSaved }) => {
+  if (!user) return null;
+
+  if (mode === "edit") {
+    return (
+      <EditStaffModal
+        user={user}
+        onClose={onClose}
+        onSaved={onSaved || (() => { })}
+      />
+    );
+  }
+
+  // ── INFO MODE ───────────────────────────────────────────────────────────────
+  const courseDuration = String(user.course || "").startsWith("M") ? 2 : 4;
+  const batchNum = parseInt(user.batchYear ?? user.batchDisplay ?? user.batch ?? "", 10);
+  const academicYear =
+    !isNaN(batchNum) && String(batchNum).length === 4
+      ? `${batchNum}–${batchNum + courseDuration}`
+      : "—";
+  const studyYear =
+    !isNaN(batchNum) && String(batchNum).length === 4
+      ? Math.min(Math.max(new Date().getFullYear() - batchNum, 1), courseDuration)
+      : null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 overflow-y-auto py-10" onClick={onClose}>
+      <div className="w-[680px] bg-white rounded-xl shadow-lg p-6 my-auto" onClick={(e) => e.stopPropagation()}>
+        <h2 className="text-sm font-semibold text-blue-800 mb-4">STAFF DETAILS</h2>
+
+        <div className="grid grid-cols-2 gap-x-8 gap-y-4 text-sm">
+          <InfoRow label="Staff ID" value={user.userId} />
+          <InfoRow label="Full Name" value={user.fullName} />
+          <InfoRow label="Department" value={user.department} />
+          <InfoRow label="Role" value={user.userRole} />
+          <InfoRow label="Course" value={user.course} />
+          <InfoRow label="Batch" value={
+            String(user.batchDisplay ?? user.batchYear ?? user.batch ?? "").toUpperCase() === "N/A"
+              ? "—"
+              : (user.batchDisplay ?? user.batchYear ?? user.batch ?? "—")
+          } />
+          <InfoRow label="Academic Year" value={academicYear} />
+          <InfoRow label="Study Year" value={studyYear ? `Year ${studyYear}` : "—"} />
+          <InfoRow label="Status" value={user.status} />
+          <InfoRow label="Created By" value={user.createdBy} />
+        </div>
+
+        <div className="flex justify-end mt-6">
+          <Button label="Close" variant="danger" onClick={onClose} />
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default UserDetailsModal;
