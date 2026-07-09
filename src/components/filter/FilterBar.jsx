@@ -3,7 +3,7 @@
 import { useState } from "react";
 import DateTimeDropdown from "../../components/DateTimeDropdown";
 import CheckboxDropdown from "./CheckboxDropdown";
-import { tableHeadText } from "../../../styles/tableHeadText";
+import { tableHeadText } from "../../styles/tableHeadText";
 
 const getDefaultToDate = () => new Date();
 

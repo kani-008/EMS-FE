@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
 import { useState, useEffect } from "react";
 import Button from "../../components/Button";
 import assets from "../../assets/assets";

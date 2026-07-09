@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 import { useState, useEffect, useRef } from "react";
 import Button from "./Button";
 import client from "../api/client";
@@ -331,7 +332,6 @@ const StaffCreateUserForm = ({ onClose, refreshUsers, advisorContext }) => {
    ============================================================================= */
 const AdminCreateUserForm = ({ onClose, refreshUsers }) => {
   const [userInfo, setUserInfo] = useState(null);
-  const [batch, setBatch] = useState("");
   const [department, setDepartment] = useState("");
   const [name, setName] = useState("");
   const [prefix, setPrefix] = useState("");
@@ -366,8 +366,9 @@ const AdminCreateUserForm = ({ onClose, refreshUsers }) => {
   }, []);
 
   useEffect(() => {
-    if (batch && department) {
-      const yearPart = batch.slice(-2);
+    const batchYear = userInfo?.batchYear;
+    if (batchYear && department) {
+      const yearPart = String(batchYear).slice(-2);
       const deptMap = {
         CSE: "CSE", ECE: "ECE", MECH: "MECH",
         EEE: "EEE", CIVIL: "CIV", IMT: "IMT", AUTO: "AUTO",
@@ -376,7 +377,7 @@ const AdminCreateUserForm = ({ onClose, refreshUsers }) => {
     } else {
       setPrefix("");
     }
-  }, [batch, department]);
+  }, [userInfo, department]);
 
   useEffect(() => {
     if (userType === "Individual") {

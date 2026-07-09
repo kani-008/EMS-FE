@@ -1,7 +1,7 @@
 // frontend/src/staff/pages/Settings/GeneralSettings.jsx
 
 import { useState } from "react";
-import "../../../styles/global.css";
+import "../../styles/global.css";
 
 /* ================= ICONS (LEFT PANEL ONLY) ================= */
 

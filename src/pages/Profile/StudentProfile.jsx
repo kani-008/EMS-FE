@@ -279,6 +279,7 @@ const StudentProfile = () => {
                 variant="primary"
                 label={savingProfile ? "Saving…" : "Save Changes"}
               />
+              <Msg msg={profileMsg} />
             </div>
           </div>
         </div>

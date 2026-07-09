@@ -8,6 +8,16 @@ const ActionMenu = ({ items = [], onAction }) => {
   const dropdownRef = useRef(null);
   const menuRef = useRef(null); // ✅ NEW
 
+  const [coords, setCoords] = useState(null);
+
+  useEffect(() => {
+    if (open && dropdownRef.current) {
+      setCoords(dropdownRef.current.getBoundingClientRect());
+    } else {
+      setCoords(null);
+    }
+  }, [open]);
+
   /* ---------- Close on outside click ---------- */
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -47,13 +57,10 @@ const ActionMenu = ({ items = [], onAction }) => {
       </button>
 
       {/* DROPDOWN (PORTAL) */}
-      {open &&
+      {open && coords &&
         (() => {
-          const rect = dropdownRef.current?.getBoundingClientRect();
-          if (!rect) return null;
-
           const DROPDOWN_HEIGHT = items.length * 40;
-          const SPACE_BELOW = window.innerHeight - rect.bottom;
+          const SPACE_BELOW = window.innerHeight - coords.bottom;
           const openUp = SPACE_BELOW < DROPDOWN_HEIGHT + 16;
 
           return createPortal(
@@ -67,9 +74,9 @@ const ActionMenu = ({ items = [], onAction }) => {
               "
               style={{
                 top: openUp
-                  ? rect.top - DROPDOWN_HEIGHT - 8
-                  : rect.bottom + 8,
-                left: rect.right - 144,
+                  ? coords.top - DROPDOWN_HEIGHT - 8
+                  : coords.bottom + 8,
+                left: coords.right - 144,
               }}
             >
               {items.map((item) => (
