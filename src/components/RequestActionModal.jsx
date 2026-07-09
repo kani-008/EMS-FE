@@ -5,7 +5,7 @@ import Button from "./Button";
 
 const RequestActionModal = ({
   mode,          // "forward" | "accept" | "decline" | "edit" | "info" | "success" | "failed"
-  request,
+  _request,
   onClose,
 }) => {
   if (!mode) return null;

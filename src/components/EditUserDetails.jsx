@@ -21,6 +21,20 @@ function InfoField({ label, value, className = "" }) {
 
 // ── MAIN COMPONENT ────────────────────────────────────────────────────────────
 const EditUserDetails = ({ user, mode, onClose, onSaved }) => {
+  // Edit form states
+  const [firstName, setFirstName] = useState(user?.firstName || user?.first_name || "");
+  const [lastName, setLastName] = useState(user?.lastName || user?.last_name || "");
+  const [gender, setGender] = useState(user?.gender || "Male");
+  const [registrationNo, setRegistrationNo] = useState(user?.registrationNo || user?.registration_no || "");
+  const [course, setCourse] = useState(user?.course || "B.E");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  // Password change states
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [pwdError, setPwdError] = useState("");
+
   if (!user) return null;
 
   const isEdit = mode === "edit";
@@ -39,20 +53,6 @@ const EditUserDetails = ({ user, mode, onClose, onSaved }) => {
       ? ((currentYear - batchNum) * 2) + 1
       : ((currentYear - batchNum) * 2))
     : null;
-
-  // Edit form states
-  const [firstName, setFirstName] = useState(user.firstName || user.first_name || "");
-  const [lastName, setLastName] = useState(user.lastName || user.last_name || "");
-  const [gender, setGender] = useState(user.gender || "Male");
-  const [registrationNo, setRegistrationNo] = useState(user.registrationNo || user.registration_no || "");
-  const [course, setCourse] = useState(user.course || "B.E");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-
-  // Password change states
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [pwdError, setPwdError] = useState("");
 
   // Resolve roll_no for the request
   const rollNo = user.userId || user.roll_no;

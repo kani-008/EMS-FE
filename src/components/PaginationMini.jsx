@@ -1,6 +1,5 @@
 // frontend/src/staff/components/PaginationMini.jsx
 import assets from "../assets/assets";
-import { tableHeadText } from "../../styles/tableHeadText";
 
 const PaginationMini = ({ pageInput, totalPages, setPageInput }) => {
   const page = Number(pageInput) || 1;
