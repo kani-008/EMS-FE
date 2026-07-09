@@ -1,10 +1,9 @@
-// frontend/src/student/App.jsx
 import { Routes, Route, Navigate } from "react-router-dom";
-import Layout from "./layout/Layout";
+import Layout from "../layout/Layout";
 
-import Dashboard from "./pages/Dashboard/Dashboard";
-import RequestManagement from "./pages/Requests/RequestManagement";
-import StudentProfile from "./pages/Profile/StudentProfile";
+import Dashboard from "../pages/Dashboard/Dashboard";
+import RequestManagement from "../pages/Requests/RequestManagement";
+import StudentProfile from "../pages/Profile/StudentProfile";
 
 const App = () => {
   return (
@@ -23,4 +22,3 @@ const App = () => {
 };
 
 export default App;
-

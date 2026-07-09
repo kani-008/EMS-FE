@@ -1,13 +1,12 @@
-// frontend/src/admin/App.jsx
 import { Routes, Route, Navigate } from "react-router-dom";
-import Layout from "./layout/Layout";
+import Layout from "../layout/Layout";
 
-import Dashboard from "./pages/Dashboard/Dashboard";
-import UserManagement from "./pages/Users/UserManagement";
-import RequestManagement from "./pages/Requests/RequestManagement";
-import GeneralSettings from "./pages/Settings/GeneralSettings";
-import Reports from "./pages/Reports/Reports";
-import AdminProfile from "./pages/Profile/AdminProfile";
+import Dashboard from "../pages/Dashboard/Dashboard";
+import UserManagement from "../pages/Users/UserManagement";
+import RequestManagement from "../pages/Requests/RequestManagement";
+import GeneralSettings from "../pages/Settings/GeneralSettings";
+import Reports from "../pages/Reports/Reports";
+import AdminProfile from "../pages/Profile/AdminProfile";
 
 const App = () => {
   return (
@@ -15,7 +14,7 @@ const App = () => {
       <Routes>
         <Route element={<Layout />}>
           <Route index element={<Dashboard />} />
-          <Route path="users" element={<UserManagement />} />
+          <Route path="users" element={<UserManagement role="ADMIN" />} />
           <Route path="requests" element={<RequestManagement />} />
           <Route path="settings" element={<GeneralSettings />} />
           <Route path="reports" element={<Reports />} />
