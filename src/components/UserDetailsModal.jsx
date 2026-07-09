@@ -5,7 +5,7 @@
 
 import { useState, useEffect } from "react";
 import Button from "./Button";
-import { getDepartments, getStaffRoles, updateStaff } from "../apiCall/Api";
+import API from "../ApiCall/Api";
 
 function ro(val) {
   return String(val ?? "-").trim() || "-";
@@ -47,11 +47,11 @@ function EditStaffModal({ user, onClose, onSaved }) {
 
   useEffect(() => {
     Promise.all([
-      getDepartments(),
-      getStaffRoles(),
+      API.get("/admin/departments"),
+      API.get("/admin/staff-roles"),
     ]).then(([dd, rd]) => {
-      if (dd.success) setDepartments(dd.data || []);
-      if (rd.success) setStaffRoles(rd.data || []);
+      if (dd.data.success) setDepartments(dd.data.data || []);
+      if (rd.data.success) setStaffRoles(rd.data.data || []);
     }).catch(() => { });
   }, []);
 
@@ -62,7 +62,7 @@ function EditStaffModal({ user, onClose, onSaved }) {
 
     setLoading(true);
     try {
-      await updateStaff(user.userId, {
+      await API.put(`/api/admin/update-staff/${user.userId}`, {
         firstName: firstName.trim(),
         lastName: lastName.trim(),
         department,

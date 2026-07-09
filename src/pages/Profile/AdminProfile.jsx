@@ -1,7 +1,7 @@
 // frontend/src/admin/pages/Profile/AdminProfile.jsx
 import { useState, useEffect } from "react";
 import Button from "../../components/Button";
-import { fetchAdminProfile, updateAdminProfile } from "../../apiCall/Api";
+import API from "../../ApiCall/Api";
 
 
 // ── Tiny helpers ────────────────────────────────────────────────────────────────
@@ -80,9 +80,9 @@ const AdminProfile = ({ embedded = false }) => {
     (async () => {
       try {
         setLoading(true);
-        const data = await fetchAdminProfile();
-        setProfile(data.data);
-        setPhone(data.data.phone || "");
+        const res = await API.get("/admin/profile");
+        setProfile(res.data.data);
+        setPhone(res.data.data.phone || "");
       } catch (err) {
         setFetchErr(err.message);
       } finally {
@@ -96,7 +96,7 @@ const AdminProfile = ({ embedded = false }) => {
     setSavingPhone(true);
     setPhoneMsg(null);
     try {
-      await updateAdminProfile({ phone });
+      await API.put("/admin/profile", { phone });
       setProfile((p) => ({ ...p, phone }));
       setPhoneMsg({ type: "ok", text: "Contact number updated." });
     } catch (err) {
@@ -119,7 +119,7 @@ const AdminProfile = ({ embedded = false }) => {
     }
     setSavingPwd(true);
     try {
-      await updateAdminProfile({ currentPassword: currentPwd, newPassword: newPwd, confirmPassword: confirmPwd });
+      await API.put("/admin/profile", { currentPassword: currentPwd, newPassword: newPwd, confirmPassword: confirmPwd });
       setPwdMsg({ type: "ok", text: "Password changed successfully." });
       setCurrentPwd("");
       setNewPwd("");

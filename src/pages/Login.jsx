@@ -1,32 +1,31 @@
-// frontend/src/loginPage/Login.jsx
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
-import axios from "axios";
+import { useAuth } from "../components/AuthContext";
+import API from "../ApiCall/Api";
 
 // Roles that access the staff portal
 const STAFF_ROLES = ["ADVISOR", "HOD", "PRINCIPAL", "FACULTY", "PLACEMENT", "SPORTS"];
 
 function getRoleRedirect(role) {
   if (role === "STUDENT") return "/student";
-  if (role === "ADMIN") return "/admin";
+  if (role === "ADMIN")   return "/admin";
   if (STAFF_ROLES.includes(role)) return "/staff";
   return null; // UNKNOWN role
 }
 
-// Navbar / sidebar color — read from .sidebar-blue { background: #147cdd } in global.css
-const BRAND = "#147cdd";
+// Navbar / sidebar colour — read from .sidebar-blue { background: #147cdd } in global.css
+const BRAND   = "#147cdd";
 const BRAND_D = "#0f6ec2"; // hover / loading shade
 
 const Login = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
 
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
+  const [username, setUsername]       = useState("");
+  const [password, setPassword]       = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [error, setError]             = useState("");
+  const [loading, setLoading]         = useState(false);
 
   const handleLogin = async () => {
     if (!username || !password) {
@@ -37,7 +36,7 @@ const Login = () => {
     setLoading(true);
     try {
       // Single API call — login response already includes role from JWT payload
-      const res = await axios.post("/api/auth/login", { username, password });
+      const res = await API.post("/auth/login", { username, password });
 
       if (!res.data.success) {
         setError("Login failed. Please check your credentials.");
@@ -58,15 +57,14 @@ const Login = () => {
         setError("Your account role is not recognized. Please contact admin.");
       }
     } catch (err) {
-      setError(err.response?.data?.message || "Login failed. Please try again.");
+      console.error("[Login] Error:", err.response?.data || err.message || err);
+      setError(err.response?.data?.message || err.message || "Login failed. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleKeyDown = (e) => {
-    if (e.key === "Enter") handleLogin();
-  };
+  const handleKeyDown = (e) => { if (e.key === "Enter") handleLogin(); };
 
   return (
     <div
@@ -100,7 +98,7 @@ const Login = () => {
           Sign in to your account
         </p>
 
-        {/* 5. Error message */}
+        {/* 4. Error message */}
         {error && (
           <div className="mb-5 px-4 py-3 rounded-lg bg-red-50 border border-red-200 flex items-start gap-2">
             <svg className="flex-shrink-0 mt-0.5" width="14" height="14" viewBox="0 0 24 24"
@@ -113,7 +111,7 @@ const Login = () => {
           </div>
         )}
 
-        {/* 6. Username */}
+        {/* 5. Username */}
         <div className="mb-4">
           <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">
             Username
@@ -131,7 +129,7 @@ const Login = () => {
           />
         </div>
 
-        {/* 7. Password */}
+        {/* 6. Password */}
         <div className="mb-6">
           <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">
             Password
@@ -172,7 +170,7 @@ const Login = () => {
           </div>
         </div>
 
-        {/* 8. Sign In button */}
+        {/* 7. Sign In button */}
         <button
           id="login-submit"
           onClick={handleLogin}
@@ -195,7 +193,7 @@ const Login = () => {
           ) : "Sign In"}
         </button>
 
-        {/* 9. Demo Credentials */}
+        {/* 8. Demo Credentials */}
         {/* ===== DEMO CREDENTIALS — comment out for production ===== */}
         <div className="mt-6 px-4 py-4 rounded-xl border border-slate-200 bg-slate-50">
           <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-3">
@@ -203,9 +201,9 @@ const Login = () => {
           </p>
           <div className="flex flex-col gap-2">
             {[
-              { role: "Student", user: "23cse01", pass: "23cse01@2023" },
-              { role: "Staff/Advisor", user: "vasuki", pass: "vasuki123" },
-              { role: "Admin", user: "admin1", pass: "admin123" },
+              { role: "Student",      user: "23cse01", pass: "23cse01@2023" },
+              { role: "Staff/Advisor", user: "vasuki",  pass: "vasuki123"    },
+              { role: "Admin",        user: "admin1",  pass: "admin123"      },
             ].map(({ role, user, pass }) => (
               <div key={role} className="flex items-center justify-between gap-2 text-xs">
                 <span className="text-slate-500 w-24 flex-shrink-0">{role}</span>
@@ -229,7 +227,7 @@ const Login = () => {
         </div>
         {/* ===== END DEMO CREDENTIALS ===== */}
 
-        {/* 10. Copyright */}
+        {/* 9. Copyright */}
         <p className="text-center text-[10px] text-slate-400 mt-6">
           © 2025 Event Tracking System. All rights reserved.
         </p>

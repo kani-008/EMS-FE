@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import Button from "./Button";
-import { getDepartments, getStaffRoles, validateBatch as apiValidateBatch, createStaff, uploadStaffExcel } from "../apiCall/Api";
+import API from "../ApiCall/Api";
 
 const CreateStaffForm = ({ onClose, refreshUsers }) => {
   const [departments, setDepartments] = useState([]);
@@ -31,11 +31,11 @@ const CreateStaffForm = ({ onClose, refreshUsers }) => {
     const load = async () => {
       try {
         const [deptData, roleData] = await Promise.all([
-          getDepartments(),
-          getStaffRoles(),
+          API.get("/admin/departments"),
+          API.get("/admin/staff-roles"),
         ]);
-        if (deptData.success) setDepartments(deptData.data || []);
-        if (roleData.success) setStaffRoles(roleData.data || []);
+        if (deptData.data.success) setDepartments(deptData.data.data || []);
+        if (roleData.data.success) setStaffRoles(roleData.data.data || []);
       } catch (err) {
         console.error("Failed to load form options:", err);
       }
@@ -57,7 +57,8 @@ const CreateStaffForm = ({ onClose, refreshUsers }) => {
 
     setBatchChecking(true);
     try {
-      const data = await apiValidateBatch(batchVal, courseVal);
+      const res = await API.get("/admin/validate-batch", { params: { batch: batchVal, course: courseVal } });
+      const data = res.data;
 
       if (data.valid) {
         setBatchValid(true);
@@ -142,7 +143,8 @@ const CreateStaffForm = ({ onClose, refreshUsers }) => {
 
     try {
       setLoading(true);
-      const data = await createStaff(payload);
+      const res = await API.post("/admin/create-staff", payload);
+      const data = res.data;
 
       const generatedUsername = data.username || "unknown";
       alert(`Staff user "${generatedUsername}" created successfully!\nTemporary password: ${generatedUsername}7311`);
@@ -175,7 +177,8 @@ const CreateStaffForm = ({ onClose, refreshUsers }) => {
     try {
       setUploading(true);
       setUploadResult(null);
-      const data = await uploadStaffExcel(formData);
+      const res = await API.post("/admin/upload-staff-excel", formData, { headers: { "Content-Type": "multipart/form-data" } });
+      const data = res.data;
       setUploadResult(data);
       await refreshUsers();
     } catch (err) {

@@ -1,16 +1,20 @@
-// frontend/src/components/ProtectedRoute.jsx
-import { Navigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
+import { Navigate, Outlet } from "react-router-dom";
+import { useAuth } from "../AuthContext";
 
 // Derive the user's correct home path from their role
 function getHomePath(role) {
   if (role === "STUDENT") return "/student";
-  if (role === "ADMIN") return "/admin";
-  // All staff/faculty roles
-  return "/staff";
+  if (role === "ADMIN")   return "/admin";
+  return "/staff"; // all staff / faculty roles
 }
 
-const ProtectedRoute = ({ children, roles }) => {
+/**
+ * ProtectedRoute
+ * Props:
+ *   roles {string[]} — allowed roles; omit to allow any authenticated user
+ *   redirectTo {string} — where unauthenticated users are sent (default: /login)
+ */
+const ProtectedRoute = ({ roles, redirectTo = "/login" }) => {
   const { user, loading } = useAuth();
 
   if (loading) {
@@ -22,11 +26,9 @@ const ProtectedRoute = ({ children, roles }) => {
   }
 
   // Not logged in → go to login
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
+  if (!user) return <Navigate to={redirectTo} replace />;
 
-  // Authenticated but wrong role → redirect to their correct portal
+  // Authenticated but wrong role → redirect to their own portal
   if (roles && !roles.includes(user.role)) {
     console.warn(
       `Access denied. Role '${user.role}' not in [${roles.join(", ")}]. Redirecting.`
@@ -34,7 +36,7 @@ const ProtectedRoute = ({ children, roles }) => {
     return <Navigate to={getHomePath(user.role)} replace />;
   }
 
-  return children;
+  return <Outlet />;
 };
 
 export default ProtectedRoute;

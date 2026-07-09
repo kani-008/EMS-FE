@@ -9,7 +9,7 @@ import PageTitleRow from "../components/PageTitleRow";
 import ActionMenu from "../components/ActionMenu";
 import CreateRequestModal from "../components/CreateRequestModal";
 import RequestActionModal from "../components/RequestActionModal";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../components/AuthContext";
 import { requestColumns } from "../components/RequestManagement/columns";
 import { filterRequests } from "../components/RequestManagement/filtersLogic";
 

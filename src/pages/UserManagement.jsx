@@ -12,14 +12,10 @@ import CreateUserForm from "../components/CreateUserForm";
 import CreateStaffForm from "../components/CreateStaffForm";
 import UserDetailsModalAdmin from "../components/UserDetailsModal";
 import EditUserDetailsStaff from "../components/EditUserDetails";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../components/AuthContext";
 import { adminUserColumns, staffUserColumns } from "../components/UserManagement/columns";
 import { filterUsers } from "../components/UserManagement/filtersLogic";
-import {
-  fetchAdminUsers,
-  fetchAdvisorContext,
-  fetchStaffStudents
-} from "../apiCall/Api";
+import API from "../ApiCall/Api";
 
 // Helper functions for Admin
 function toTitleCase(value) {
@@ -77,9 +73,9 @@ const UserManagement = () => {
 
   const fetchUsersAdmin = async () => {
     try {
-      const data = await fetchAdminUsers();
-      if (data.success) {
-        const formatted = (data.data || []).map((u) => {
+      const res = await API.get("/admin/users");
+      if (res.data.success) {
+        const formatted = (res.data.data || []).map((u) => {
           const roleVal = normalizeRole(
             u.userRole ?? u.role ?? u.user_role ?? u.user_role_name
           );
@@ -144,9 +140,9 @@ const UserManagement = () => {
 
   const fetchAdvisorContextStaff = async () => {
     try {
-      const data = await fetchAdvisorContext();
-      if (data.success && data.data) {
-        setContextStaff(data.data);
+      const res = await API.get("/staff/advisor-context");
+      if (res.data.success && res.data.data) {
+        setContextStaff(res.data.data);
       }
     } catch (err) {
       console.error("Fetch advisor context error:", err);
@@ -155,9 +151,9 @@ const UserManagement = () => {
 
   const fetchUsersStaff = async () => {
     try {
-      const data = await fetchStaffStudents();
-      if (data.success && data.data) {
-        const formatted = data.data.map((u) => ({
+      const res = await API.get("/staff/students");
+      if (res.data.success && res.data.data) {
+        const formatted = res.data.data.map((u) => ({
           userId:          u.roll_no || "-",
           userName:        u.full_name || `${u.first_name || ""} ${u.last_name || ""}`.trim() || u.user_name,
           course:          u.course || "-",

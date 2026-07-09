@@ -1,7 +1,7 @@
 // frontend/src/components/NavBar.jsx
 import { NavLink } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
-import { NAV_CONFIG, STAFF_ROLES } from "../utils/constants";
+import { useAuth } from "./AuthContext";
+import { NAV_CONFIG, STAFF_ROLES } from "./constants";
 import assets from "../assets/assets";
 
 const NavBar = () => {

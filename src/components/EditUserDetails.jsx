@@ -1,7 +1,7 @@
 import { useState } from "react";
 import StatusBadge from "./StatusBadge";
 import Button from "./Button";
-import { updateStudent } from "../apiCall/Api";
+import API from "../ApiCall/Api";
 
 function ro(val) {
   return String(val ?? "-").trim() || "-";
@@ -92,7 +92,7 @@ const EditUserDetails = ({ user, mode, onClose, onSaved }) => {
         body.newPassword = newPassword;
       }
 
-      await updateStudent(rollNo, body);
+      await API.put(`/api/staff/students/${rollNo}`, body);
 
       alert("Student updated successfully!");
       if (onSaved) await onSaved();

@@ -1,7 +1,7 @@
 // frontend/src/student/pages/Profile/StudentProfile.jsx
 import { useState, useEffect } from "react";
 import Button from "../../components/Button";
-import { fetchStudentProfile, updateStudentProfile, updateStudentPassword } from "../../apiCall/Api";
+import API from "../../ApiCall/Api";
 
 
 // ── Tiny helpers ────────────────────────────────────────────────────────────────
@@ -82,12 +82,12 @@ const StudentProfile = () => {
     (async () => {
       try {
         setLoading(true);
-        const data = await fetchStudentProfile();
-        setProfile(data.data);
-        setFirstName(data.data.firstName || "");
-        setLastName(data.data.lastName || "");
-        setRegistrationNo(data.data.registrationNo || "");
-        setGender(data.data.gender || "");
+        const res = await API.get("/student/profile");
+        setProfile(res.data.data);
+        setFirstName(res.data.data.firstName || "");
+        setLastName(res.data.data.lastName || "");
+        setRegistrationNo(res.data.data.registrationNo || "");
+        setGender(res.data.data.gender || "");
       } catch (err) {
         setFetchErr(err.message);
       } finally {
@@ -101,7 +101,7 @@ const StudentProfile = () => {
     setSavingProfile(true);
     setProfileMsg(null);
     try {
-      await updateStudentProfile({
+      await API.put("/student/profile", {
         first_name:      firstName,
         last_name:       lastName,
         registration_no: registrationNo,
@@ -136,7 +136,7 @@ const StudentProfile = () => {
     }
     setSavingPwd(true);
     try {
-      await updateStudentPassword({ currentPassword: currentPwd, newPassword: newPwd, confirmPassword: confirmPwd });
+      await API.put("/student/profile/password", { currentPassword: currentPwd, newPassword: newPwd, confirmPassword: confirmPwd });
       setPwdMsg({ type: "ok", text: "Password changed successfully." });
       setCurrentPwd("");
       setNewPwd("");

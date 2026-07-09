@@ -1,13 +1,7 @@
 // frontend/src/components/CreateUserForm.jsx
 import { useState, useEffect, useRef } from "react";
 import Button from "./Button";
-import {
-  createAdminUsers,
-  createStudentRange,
-  createSingleStudent,
-  uploadStudentExcel,
-  getMe
-} from "../apiCall/Api";
+import API from "../ApiCall/Api";
 
 const CreateUserForm = ({ onClose, refreshUsers, advisorContext }) => {
   const isStaffFlow = !!advisorContext;
@@ -69,7 +63,8 @@ const CreateUserForm = ({ onClose, refreshUsers, advisorContext }) => {
     try {
       setUploading(true);
       setUploadResult(null);
-      const data = await uploadStudentExcel(formData);
+      const res = await API.post("/staff/students/excel", formData, { headers: { "Content-Type": "multipart/form-data" } });
+      const data = res.data;
       setUploadResult(data);
       await refreshUsers();
     } catch (err) {
@@ -120,7 +115,8 @@ const CreateUserForm = ({ onClose, refreshUsers, advisorContext }) => {
     if (!isStaffFlow) {
       const fetchUserInfo = async () => {
         try {
-          const data = await getMe();
+          const res = await API.get("/auth/me");
+          const data = res.data;
           if (data.success) {
             setUserInfo({
               ...data.user,
@@ -184,13 +180,14 @@ const CreateUserForm = ({ onClose, refreshUsers, advisorContext }) => {
           return;
         }
         try {
-          const data = await createStudentRange({
+          const res = await API.post("/staff/students/range", {
             prefix: prefixStaff.trim(),
             range_from: parseInt(rangeFromStaff, 10),
             range_to: parseInt(rangeToStaff, 10),
             course: courseStaff,
             semester: advisorContext?.derived_semester,
           });
+          const data = res.data;
           alert(`Range creation complete — ${data.created} created successfully, ${data.failed} failed.`);
           await refreshUsers();
           onClose();
@@ -206,7 +203,7 @@ const CreateUserForm = ({ onClose, refreshUsers, advisorContext }) => {
           return;
         }
         try {
-          await createSingleStudent({
+          await API.post("/staff/students/single", {
             roll_no: rollNo.trim(),
             first_name: firstName.trim(),
             last_name: lastName.trim(),
@@ -249,7 +246,8 @@ const CreateUserForm = ({ onClose, refreshUsers, advisorContext }) => {
           batch: String(batchYear),
         };
 
-        const data = await createAdminUsers(payload);
+        const res = await API.post("/admin/create-users", payload);
+        const data = res.data;
         alert(`\u2705 ${data.totalCreated} users created successfully`);
         await refreshUsers();
         onClose();

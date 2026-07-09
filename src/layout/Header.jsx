@@ -2,8 +2,8 @@
 import assets from "../assets/assets.js";
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
-import { STAFF_ROLES } from "../utils/constants";
+import { useAuth } from "../components/AuthContext";
+import { STAFF_ROLES } from "../components/constants";
 
 const Header = () => {
   const navigate = useNavigate();

@@ -2,7 +2,7 @@
 import { useState } from "react";
 import DateTimeDropdown from "../DateTimeDropdown";
 import CheckboxDropdown from "./CheckboxDropdown";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../components/AuthContext";
 import assets from "../../../src/assets/assets";
 
 const getDefaultToDate = () => new Date();
