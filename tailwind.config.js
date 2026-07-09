@@ -11,6 +11,11 @@ export default {
       fontFamily: {
         sans: ["Inter", "system-ui", "sans-serif"],
       },
+      colors: {
+        grey: {
+          300: "#d1d5db",
+        },
+      },
     },
   },
   plugins: [],

@@ -1,8 +1,7 @@
-﻿// frontend/src/context/AuthContext.jsx
-import { createContext, useContext, useEffect, useState } from "react";
+// frontend/src/context/AuthContext.jsx
+import { useContext, useEffect, useState } from "react";
 import axios from "axios";
-
-const AuthContext = createContext(null);
+import { AuthContext } from "./authContextObject";
 
 // Include cookies with all requests (HTTP-only cookie auth)
 axios.defaults.withCredentials = true;
@@ -51,4 +50,6 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
+// Re-exported for backward compatibility — all existing import sites keep working
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = () => useContext(AuthContext);

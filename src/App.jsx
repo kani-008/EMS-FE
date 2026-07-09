@@ -2,15 +2,19 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 
 import Login from "./loginPage/Login";
+import Layout from "./layout/Layout";
+import Dashboard from "./pages/Dashboard";
+import UserManagement from "./pages/UserManagement";
+import RequestManagement from "./pages/RequestManagement";
+import Settings from "./pages/Settings";
+import Reports from "./pages/Reports";
 
-import StudentApp from "./student/App";
-import StaffApp from "./staff/App";
-import AdminApp from "./admin/App";
+import AdminProfile from "./pages/Profile/AdminProfile";
+import StaffProfile from "./pages/Profile/StaffProfile";
+import StudentProfile from "./pages/Profile/StudentProfile";
 
 import ProtectedRoute from "./components/ProtectedRoute";
-
-// Must stay in sync with STAFF_ROLES in Login.jsx and ROLE_MAP in auth.service.js
-const STAFF_ROLES = ["ADVISOR", "HOD", "PRINCIPAL", "FACULTY", "PLACEMENT", "SPORTS"];
+import { STAFF_ROLES } from "./utils/constants";
 
 const App = () => {
   return (
@@ -21,35 +25,53 @@ const App = () => {
       {/* Single Unified Login Page */}
       <Route path="/login" element={<Login />} />
 
-      {/* Student App (PROTECTED: only STUDENT role) */}
+      {/* Student App Routes */}
       <Route
-        path="/student/*"
+        path="/student"
         element={
           <ProtectedRoute roles={["STUDENT"]}>
-            <StudentApp />
+            <Layout />
           </ProtectedRoute>
         }
-      />
+      >
+        <Route index element={<Dashboard />} />
+        <Route path="requests" element={<RequestManagement />} />
+        <Route path="profile" element={<StudentProfile />} />
+      </Route>
 
-      {/* Staff App (PROTECTED: all staff/faculty roles) */}
+      {/* Staff App Routes */}
       <Route
-        path="/staff/*"
+        path="/staff"
         element={
           <ProtectedRoute roles={STAFF_ROLES}>
-            <StaffApp />
+            <Layout />
           </ProtectedRoute>
         }
-      />
+      >
+        <Route index element={<Dashboard />} />
+        <Route path="requests" element={<RequestManagement />} />
+        <Route path="users" element={<UserManagement />} />
+        <Route path="settings" element={<Settings />} />
+        <Route path="reports" element={<Reports />} />
+        <Route path="profile" element={<StaffProfile />} />
+      </Route>
 
-      {/* Admin App (PROTECTED: only ADMIN role) */}
+      {/* Admin App Routes */}
       <Route
-        path="/admin/*"
+        path="/admin"
         element={
           <ProtectedRoute roles={["ADMIN"]}>
-            <AdminApp />
+            <Layout />
           </ProtectedRoute>
         }
-      />
+      >
+        <Route index element={<Dashboard />} />
+        <Route path="requests" element={<RequestManagement />} />
+        <Route path="users" element={<UserManagement />} />
+        <Route path="settings" element={<Settings />} />
+        <Route path="reports" element={<Reports />} />
+        <Route path="profile" element={<AdminProfile />} />
+      </Route>
 
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/login" replace />} />
