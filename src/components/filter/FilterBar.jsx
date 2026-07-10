@@ -4,8 +4,7 @@ import DateTimeDropdown from "../DateTimeDropdown";
 import CheckboxDropdown from "./CheckboxDropdown";
 import { useAuth } from "../../components/AuthContext";
 import assets from "../../../src/assets/assets";
-import API from "../../ApiCall/Api";
-import { getCachedData } from "../../ApiCall/cache";
+import API, { getCachedData } from "../../ApiCall/Api";
 
 const getDefaultToDate = () => new Date();
 

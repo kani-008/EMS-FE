@@ -2,9 +2,8 @@
 import { useState, useEffect, useRef } from "react";
 import Button from "./Button";
 import Dropdown from "./Dropdown";
-import API from "../ApiCall/Api";
+import API, { getCachedData } from "../ApiCall/Api";
 import { useToast } from "./Toast";
-import { getCachedData } from "../ApiCall/cache";
 
 const getDeptPrefix = (deptName) => {
   const name = String(deptName || "").trim().toUpperCase();
