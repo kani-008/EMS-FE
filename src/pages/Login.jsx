@@ -54,7 +54,7 @@ const Login = () => {
       const userData = res.data.user; // { username, role, roleId, department_id, status }
 
       // Populate AuthContext with user data (no extra /api/auth/me call needed)
-      login(userData);
+      login(userData, res.data.accessToken, res.data.refreshToken);
 
       // Redirect dynamically based on role returned by backend
       const path = getRoleRedirect(userData.role);

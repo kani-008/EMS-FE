@@ -63,6 +63,7 @@ const UserManagement = () => {
   const [selectedIds, setSelectedIds] = useState([]);
   const [users, setUsers] = useState([]);
   const [fetchError, setFetchError] = useState("");
+  const [staffBatches, setStaffBatches] = useState([]);
   const [stats, setStats] = useState({ total: 0, active: 0, inactive: 0 });
 
   const pageSize = 6;
@@ -216,6 +217,10 @@ const UserManagement = () => {
           semester:        u.semester || "-",
         }));
         setUsers(formatted);
+        const hasFilters = currentFilters && Object.keys(currentFilters).some(k => currentFilters[k] && currentFilters[k].length > 0);
+        if (!hasFilters) {
+          setStaffBatches([...new Set(formatted.map(u => u.batch))].filter(b => b && b !== "-").sort());
+        }
       }
     } catch (err) {
       console.error("Fetch students staff error:", err);
@@ -240,7 +245,11 @@ const UserManagement = () => {
   }, [isAdmin, filters]);
 
   // ──────────────── FILTERING & PAGINATION ────────────────
-  const uniqueBatchesStaff = [...new Set(users.map((u) => u.batch))].filter(Boolean).sort();
+  const hasActiveFilters = Object.keys(filters).some((key) => {
+    const val = filters[key];
+    if (Array.isArray(val)) return val.length > 0;
+    return val !== undefined && val !== null && val !== "";
+  });
   
   const filteredData = users; // Server-side filtered
 
@@ -360,7 +369,7 @@ const UserManagement = () => {
         )}
 
         {/* CONDITIONAL UI */}
-        {users.length === 0 ? (
+        {(users.length === 0 && !hasActiveFilters) ? (
           <div className="flex justify-center items-center min-h-[60vh]">
             <p className="text-gray-500 text-lg">No users created yet</p>
           </div>
@@ -389,15 +398,21 @@ const UserManagement = () => {
               />
             </UserFilterBar>
 
-            {/* TABLE */}
-            <Table
-              columns={adminUserColumns}
-              data={paginatedData}
-              selectable
-              selectedIds={selectedIds}
-              setSelectedIds={setSelectedIds}
-              actions={actions}
-            />
+            {users.length === 0 ? (
+              <div className="flex justify-center items-center min-h-[40vh]">
+                <p className="text-gray-500 text-lg">No users match the current filters</p>
+              </div>
+            ) : (
+              /* TABLE */
+              <Table
+                columns={adminUserColumns}
+                data={paginatedData}
+                selectable
+                selectedIds={selectedIds}
+                setSelectedIds={setSelectedIds}
+                actions={actions}
+              />
+            )}
           </>
         )}
 
@@ -452,7 +467,7 @@ const UserManagement = () => {
       )}
 
       {/* CONDITIONAL TABLE CONTENT */}
-      {users.length === 0 ? (
+      {(users.length === 0 && !hasActiveFilters) ? (
         <div className="flex justify-center items-center min-h-[60vh]">
           <p className="text-gray-500 text-lg">No users created yet</p>
         </div>
@@ -468,7 +483,7 @@ const UserManagement = () => {
               setBulkActionType(type);
               setConfirmOpen(true);
             }}
-            batches={uniqueBatchesStaff}
+            batches={staffBatches}
             onReset={() => {
               setFilters({});
               setPage("1");
@@ -482,17 +497,23 @@ const UserManagement = () => {
             />
           </UserFilterBar>
 
-          {/* DATA TABLE */}
-          <Table
-            columns={staffUserColumns}
-            data={paginatedData}
-            selectable
-            selectedIds={selectedIds}
-            setSelectedIds={setSelectedIds}
-            getRowId={(row) => row.userId}
-            actions={actions}
-            scrollable
-          />
+          {users.length === 0 ? (
+            <div className="flex justify-center items-center min-h-[40vh]">
+              <p className="text-gray-500 text-lg">No users match the current filters</p>
+            </div>
+          ) : (
+            /* DATA TABLE */
+            <Table
+              columns={staffUserColumns}
+              data={paginatedData}
+              selectable
+              selectedIds={selectedIds}
+              setSelectedIds={setSelectedIds}
+              getRowId={(row) => row.userId}
+              actions={actions}
+              scrollable
+            />
+          )}
         </>
       )}
 

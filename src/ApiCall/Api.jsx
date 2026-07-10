@@ -6,9 +6,22 @@ export const API_URL = import.meta.env.VITE_API_URL;
 // ── Axios instance ─────────────────────────────────────────────────────────────
 const API = axios.create({
   baseURL: API_URL,
-  withCredentials: true,
   headers: { "Content-Type": "application/json" },
 });
+
+// ── Request interceptor — attach Bearer token ───────────────────────────────
+API.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem("ems_access_token");
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
 
 // ── Auth injection ─────────────────────────────────────────────────────────
 // AuthProvider calls injectLogout(fn) once on mount so the response
@@ -31,7 +44,7 @@ const processQueue = (error, token = null) => {
   failedQueue = [];
 };
 
-// ── Response interceptor — auto-logout on 401 ─────────────────────────────
+// ── Response interceptor — silent re-auth or auto-logout ──────────────────
 API.interceptors.response.use(
   (res) => res,
   async (err) => {
@@ -51,7 +64,8 @@ API.interceptors.response.use(
           return new Promise((resolve, reject) => {
             failedQueue.push({ resolve, reject });
           })
-            .then(() => {
+            .then((token) => {
+              originalRequest.headers.Authorization = `Bearer ${token}`;
               return API(originalRequest);
             })
             .catch((queueErr) => {
@@ -62,11 +76,24 @@ API.interceptors.response.use(
         originalRequest._retry = true;
         isRefreshing = true;
 
+        const refreshToken = localStorage.getItem("ems_refresh_token");
+        if (!refreshToken) {
+          isRefreshing = false;
+          if (_logout) {
+            _logout();
+          }
+          return Promise.reject(err);
+        }
+
         try {
-          const refreshRes = await API.post("/auth/refresh-token");
-          if (refreshRes.data.success) {
-            processQueue(null);
+          // Use direct axios call to avoid request interceptor applying old bearer token
+          const refreshRes = await axios.post(`${API_URL}/auth/refresh-token`, { refreshToken });
+          if (refreshRes.data.success && refreshRes.data.accessToken) {
+            const newToken = refreshRes.data.accessToken;
+            localStorage.setItem("ems_access_token", newToken);
+            processQueue(null, newToken);
             isRefreshing = false;
+            originalRequest.headers.Authorization = `Bearer ${newToken}`;
             return API(originalRequest);
           }
         } catch (refreshErr) {
