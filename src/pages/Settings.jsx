@@ -1,15 +1,15 @@
-import { useState } from "react";
+// frontend/src/pages/Settings.jsx
+import { useState, useEffect } from "react";
+import API from "../ApiCall/Api.jsx";
 
-/* ================= ICONS (LEFT PANEL ONLY) ================= */
+/* ── Inline SVG icons ────────────────────────────────────────────────────── */
 
-/* STATUS – bold green circle */
 const StatusIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="#198754">
     <circle cx="12" cy="12" r="8" />
   </svg>
 );
 
-/* CREATE – bold blue plus */
 const CreateIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" stroke="#0d6efd" strokeWidth="3" fill="none">
     <line x1="12" y1="5" x2="12" y2="19" />
@@ -17,7 +17,6 @@ const CreateIcon = () => (
   </svg>
 );
 
-/* CANCEL – bold red cross */
 const CancelIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" stroke="#dc3545" strokeWidth="3" fill="none">
     <line x1="6" y1="6" x2="18" y2="18" />
@@ -25,7 +24,6 @@ const CancelIcon = () => (
   </svg>
 );
 
-/* FORWARD – person to person move */
 const ForwardIcon = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fd7e14" strokeWidth="2.5">
     <circle cx="6" cy="7" r="3" />
@@ -36,130 +34,268 @@ const ForwardIcon = () => (
   </svg>
 );
 
-/* ================= PAGE ================= */
+/* ── Left-panel accent colours by field ─────────────────────────────────── */
+const BORDER_MAP = {
+  Status:  "border-l-4 border-l-green-600",
+  Create:  "border-l-4 border-l-blue-600",
+  Cancel:  "border-l-4 border-l-red-500",
+  Forward: "border-l-4 border-l-orange-500",
+};
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PAGE
+═══════════════════════════════════════════════════════════════════════════ */
 
 const GeneralSettings = () => {
   const [selected, setSelected] = useState("Status");
 
   const fields = [
-    { name: "Status", cls: "wf-status", icon: <StatusIcon /> },
-    { name: "Create", cls: "wf-create", icon: <CreateIcon /> },
-    { name: "Cancel", cls: "wf-cancel", icon: <CancelIcon /> },
-    { name: "Forward", cls: "wf-forward", icon: <ForwardIcon /> },
+    { name: "Status",  icon: <StatusIcon />  },
+    { name: "Create",  icon: <CreateIcon />  },
+    { name: "Cancel",  icon: <CancelIcon />  },
+    { name: "Forward", icon: <ForwardIcon /> },
   ];
 
   return (
-    <div className="gs-page">
-      <div className="gs-title">General Settings</div>
+    <div className="p-4 bg-slate-100 min-h-full">
+      <h1 className="text-base font-semibold mb-3 text-slate-800">General Settings</h1>
 
-      <div className="gs-box">
-        {/* LEFT PANEL */}
-        <div className="gs-left">
-          <div className="gs-subtitle">Required Fields</div>
+      <div className="flex bg-white border border-slate-300 rounded-lg overflow-hidden"
+           style={{ height: "calc(100vh - 140px)" }}>
 
-          {fields.map(f => (
-            <div
+        {/* ── LEFT PANEL ────────────────────────────────────────────── */}
+        <div className="w-64 shrink-0 p-3.5 border-r border-slate-200">
+          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">
+            Required Fields
+          </p>
+
+          {fields.map((f) => (
+            <button
               key={f.name}
-              className={`gs-item ${f.cls} ${selected === f.name ? "active" : ""}`}
               onClick={() => setSelected(f.name)}
+              className={`
+                w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg border
+                text-sm text-left mb-2 transition-colors
+                ${BORDER_MAP[f.name]}
+                ${selected === f.name
+                  ? "bg-blue-50 border-slate-200 text-slate-800 font-medium"
+                  : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"}
+              `}
             >
-              <span className="gs-icon">{f.icon}</span>
-              <span>{f.name}</span>
-              <span className="dots">⋯</span>
-            </div>
+              <span className="flex items-center justify-center">{f.icon}</span>
+              <span className="flex-1">{f.name}</span>
+              <span className="text-slate-400 text-lg leading-none">⋯</span>
+            </button>
           ))}
         </div>
 
-        {/* RIGHT PANEL */}
-        <div className="gs-right">
-          {/* ❌ NO ICON HERE — TEXT ONLY */}
-          <div className="gs-subtitle">
+        {/* ── RIGHT PANEL ───────────────────────────────────────────── */}
+        <div className="flex-1 px-8 py-7 bg-slate-50 overflow-y-auto">
+          <p className="text-sm font-semibold text-slate-700 mb-5">
             {selected} – Field Properties
-          </div>
+          </p>
 
-          {selected === "Status" && <StatusConfig />}
-          {selected === "Create" && <CreateConfig />}
-          {selected === "Cancel" && <CancelConfig />}
+          {selected === "Status"  && <StatusConfig />}
+          {selected === "Create"  && <CreateConfig />}
+          {selected === "Cancel"  && <CancelConfig />}
           {selected === "Forward" && <ForwardConfig />}
         </div>
       </div>
     </div>
-
   );
 };
 
 export default GeneralSettings;
 
+/* ══════════════════════════════════════════════════════════════════════════
+   STATUS CONFIG — fetches real statuses from API; allows colour editing
+══════════════════════════════════════════════════════════════════════════ */
 
-/* ================= STATUS ================= */
+/* Default colour palette for known statuses */
+const DEFAULT_COLORS = {
+  Pending:   "#7F7F7F",
+  Forwarded: "#0d6efd",
+  Accepted:  "#198754",
+  Declined:  "#dc3545",
+};
 
 const StatusConfig = () => {
-  const [rows, setRows] = useState([
-    { id: 1, name: "Pending", color: "#7F7F7F", final: false },
-    { id: 2, name: "Forward", color: "#0d6efd", final: false },
-    { id: 3, name: "Accepted", color: "#198754", final: true },
-    { id: 4, name: "Rejected", color: "#dc3545", final: true },
-  ]);
+  const [rows, setRows]       = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const update = (id, key, value) => {
-    setRows(r => r.map(x => x.id === id ? { ...x, [key]: value } : x));
-  };
+  useEffect(() => {
+    API.get("/requests/statuses")
+      .then((res) => {
+        if (res.data?.success) {
+          setRows(
+            res.data.data.map((s, i) => ({
+              id:    s.id,
+              name:  s.status,
+              color: DEFAULT_COLORS[s.status] ?? "#7F7F7F",
+              final: ["Accepted", "Declined"].includes(s.status),
+            }))
+          );
+        }
+      })
+      .catch(() => {
+        /* fallback to hardcoded defaults if API is unreachable */
+        setRows([
+          { id: "PS1", name: "Pending",   color: "#7F7F7F", final: false },
+          { id: "PS2", name: "Forwarded", color: "#0d6efd", final: false },
+          { id: "PS3", name: "Accepted",  color: "#198754", final: true  },
+          { id: "PS4", name: "Declined",  color: "#dc3545", final: true  },
+        ]);
+      })
+      .finally(() => setLoading(false));
+  }, []);
+
+  const update = (id, key, value) =>
+    setRows((r) => r.map((x) => (x.id === id ? { ...x, [key]: value } : x)));
+
+  if (loading) {
+    return (
+      <div className="flex items-center gap-2 text-sm text-slate-400">
+        <div className="h-4 w-4 animate-spin rounded-full border-2 border-blue-400 border-t-transparent" />
+        Loading statuses…
+      </div>
+    );
+  }
 
   return (
-    <div className="gs-table">
-      <div className="gs-header">
+    <div className="w-full max-w-2xl">
+      {/* Header */}
+      <div className="grid grid-cols-[3fr_3fr_1.5fr_1fr] gap-6 pb-3 border-b border-slate-200 text-xs font-semibold text-slate-500 uppercase tracking-wider">
         <span>Status</span>
-        <span>Color Code</span>
-        <span>Color</span>
+        <span>Colour Code</span>
+        <span>Colour</span>
         <span>Final</span>
       </div>
 
-      {rows.map(r => (
-        <div className="gs-row" key={r.id}>
-          <input value={r.name} onChange={e => update(r.id,"name",e.target.value)} />
-          <input value={r.color} onChange={e => update(r.id,"color",e.target.value)} />
-          <input type="color" className="color-picker" value={r.color} onChange={e => update(r.id,"color",e.target.value)} />
-          <input type="checkbox" checked={r.final} onChange={e => update(r.id,"final",e.target.checked)} />
+      {rows.map((r) => (
+        <div
+          key={r.id}
+          className="grid grid-cols-[3fr_3fr_1.5fr_1fr] gap-6 items-center py-4 border-b border-slate-100"
+        >
+          <input
+            value={r.name}
+            onChange={(e) => update(r.id, "name", e.target.value)}
+            className="h-10 rounded-lg border border-slate-200 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
+          />
+          <input
+            value={r.color}
+            onChange={(e) => update(r.id, "color", e.target.value)}
+            className="h-10 rounded-lg border border-slate-200 px-3 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-200"
+          />
+          <input
+            type="color"
+            value={r.color}
+            onChange={(e) => update(r.id, "color", e.target.value)}
+            className="h-10 w-12 cursor-pointer rounded border border-slate-200 p-0.5"
+          />
+          <input
+            type="checkbox"
+            checked={r.final}
+            onChange={(e) => update(r.id, "final", e.target.checked)}
+            className="h-5 w-5 cursor-pointer"
+          />
         </div>
       ))}
+
+      <div className="mt-6 flex gap-3">
+        <button className="rounded-lg border border-green-600 px-6 py-2 text-sm text-green-700 hover:bg-green-50 transition-colors">
+          Save Changes
+        </button>
+      </div>
     </div>
   );
 };
 
-/* ================= CREATE ================= */
+/* ══════════════════════════════════════════════════════════════════════════
+   CREATE CONFIG
+══════════════════════════════════════════════════════════════════════════ */
+
 const CreateConfig = () => (
-  <div className="gs-card blue">
-    <label>Allowed Roles</label>
-    <select><option>Admin</option><option>Staff</option><option>All</option></select>
-
-    <label>Default Status</label>
-    <select><option>Pending</option></select>
+  <div className="max-w-lg border-l-4 border-l-blue-600 pl-4 grid gap-4">
+    <div>
+      <label className="mb-1 block text-xs font-semibold text-slate-500 uppercase tracking-wider">
+        Allowed Roles
+      </label>
+      <select className="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200">
+        <option>Admin</option>
+        <option>Staff</option>
+        <option>All</option>
+      </select>
+    </div>
+    <div>
+      <label className="mb-1 block text-xs font-semibold text-slate-500 uppercase tracking-wider">
+        Default Status
+      </label>
+      <select className="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200">
+        <option>Pending</option>
+      </select>
+    </div>
   </div>
 );
 
-/* ================= CANCEL ================= */
+/* ══════════════════════════════════════════════════════════════════════════
+   CANCEL CONFIG
+══════════════════════════════════════════════════════════════════════════ */
+
 const CancelConfig = () => (
-  <div className="gs-card red">
-    <label>Allowed Until</label>
-    <select><option>Before Final</option><option>Always</option></select>
-
-    <label>Cancel Action</label>
-    <select><option>Change Status</option><option>Exit Workflow</option></select>
+  <div className="max-w-lg border-l-4 border-l-red-500 pl-4 grid gap-4">
+    <div>
+      <label className="mb-1 block text-xs font-semibold text-slate-500 uppercase tracking-wider">
+        Allowed Until
+      </label>
+      <select className="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200">
+        <option>Before Final</option>
+        <option>Always</option>
+      </select>
+    </div>
+    <div>
+      <label className="mb-1 block text-xs font-semibold text-slate-500 uppercase tracking-wider">
+        Cancel Action
+      </label>
+      <select className="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200">
+        <option>Change Status</option>
+        <option>Exit Workflow</option>
+      </select>
+    </div>
   </div>
 );
 
-/* ================= FORWARD ================= */
+/* ══════════════════════════════════════════════════════════════════════════
+   FORWARD CONFIG
+══════════════════════════════════════════════════════════════════════════ */
+
 const ForwardConfig = () => (
-  <div className="gs-card orange">
-    <label>Allowed Status</label>
-    <select><option>Pending</option><option>Forward</option></select>
-
-    <label>Allowed Role</label>
-    <select><option>Staff</option><option>Admin</option></select>
-
-    <label>Next Status</label>
-    <select><option>Forward</option><option>Accepted</option></select>
+  <div className="max-w-lg border-l-4 border-l-orange-500 pl-4 grid gap-4">
+    <div>
+      <label className="mb-1 block text-xs font-semibold text-slate-500 uppercase tracking-wider">
+        Allowed Status
+      </label>
+      <select className="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200">
+        <option>Pending</option>
+        <option>Forwarded</option>
+      </select>
+    </div>
+    <div>
+      <label className="mb-1 block text-xs font-semibold text-slate-500 uppercase tracking-wider">
+        Allowed Role
+      </label>
+      <select className="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200">
+        <option>Staff</option>
+        <option>Admin</option>
+      </select>
+    </div>
+    <div>
+      <label className="mb-1 block text-xs font-semibold text-slate-500 uppercase tracking-wider">
+        Next Status
+      </label>
+      <select className="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200">
+        <option>Forwarded</option>
+        <option>Accepted</option>
+      </select>
+    </div>
   </div>
 );
-
-

@@ -1,109 +1,170 @@
-import { useState } from "react";
+// frontend/src/components/CreateRequestModal.jsx
+import { useState, useEffect } from "react";
 import Button from "./Button";
+import API from "../ApiCall/Api.jsx";
+import { useAuth } from "./AuthContext";
 
+const CreateRequestModal = ({ onClose, onSuccess }) => {
+  const { user } = useAuth();
 
-const CreateRequestModal = ({ onClose }) => {
-  const [course, setCourse] = useState("");
-  const [department, setDepartment] = useState("");
-  const [year, setYear] = useState("");
-  const [semester, setSemester] = useState("");
-  const [staff, setStaff] = useState("");
-  const [date, setDate] = useState("");
+  // ── Auto-filled from session ──────────────────────────────────────
+  const studentName = user
+    ? `${user.first_name || ""} ${user.last_name || ""}`.trim() || user.username || ""
+    : "";
 
-  const [categoryOpen, setCategoryOpen] = useState(false);
-  const [category, setCategory] = useState("");
+  // ── Form state ────────────────────────────────────────────────────
+  const [requestTypeId, setRequestTypeId] = useState("");
+  const [requestedTo,   setRequestedTo]   = useState("");
+  const [requestDate,   setRequestDate]   = useState("");
+  const [requestReason, setRequestReason] = useState("");
+  const [semester,      setSemester]      = useState("");
   const [semesterError, setSemesterError] = useState("");
 
+  // ── Reference data ────────────────────────────────────────────────
+  const [requestTypes, setRequestTypes] = useState([]);
+  const [staffList,    setStaffList]    = useState([]);
+  const [typesLoading, setTypesLoading] = useState(true);
+
+  // ── Submit state ──────────────────────────────────────────────────
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+
+  /* ── Fetch reference data on mount ───────────────────────────────── */
+  useEffect(() => {
+    const load = async () => {
+      setTypesLoading(true);
+      try {
+        const [typesRes, staffRes] = await Promise.allSettled([
+          API.get("/requests/types"),
+          API.get("/staff"),
+        ]);
+
+        if (typesRes.status === "fulfilled" && typesRes.value.data?.success) {
+          setRequestTypes(typesRes.value.data.data || []);
+        }
+        if (staffRes.status === "fulfilled" && staffRes.value.data?.success) {
+          // staff list may come as array of objects with user_name / first_name etc.
+          setStaffList(staffRes.value.data.data || []);
+        }
+      } catch (_) {
+        // ignore — dropdowns will just be empty
+      } finally {
+        setTypesLoading(false);
+      }
+    };
+    load();
+  }, []);
+
+  /* ── Submit ──────────────────────────────────────────────────────── */
+  const handleSubmit = async () => {
+    setSubmitError("");
+
+    if (!requestTypeId) { setSubmitError("Please select a request category."); return; }
+    if (!requestedTo)   { setSubmitError("Please select who to send the request to."); return; }
+    if (!requestDate)   { setSubmitError("Please select a date."); return; }
+
+    setSubmitting(true);
+    try {
+      const payload = {
+        requestedTo,
+        requestTypeId,
+        requestReason: requestReason || null,
+        requestDate,
+        currentYear: user?.current_year    || null,
+        semester:    semester || user?.semester || null,
+        courseId:    user?.course            || null,
+        departmentId: user?.department_id    || null,
+        academicYearId: user?.academic_year_id || null,
+      };
+
+      const res = await API.post("/requests", payload);
+      if (res.data?.success) {
+        onSuccess?.();
+      } else {
+        setSubmitError(res.data?.message || "Submission failed.");
+      }
+    } catch (err) {
+      setSubmitError(err.response?.data?.message || "Submission failed. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  /* ── Render ──────────────────────────────────────────────────────── */
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
-      <div className="w-[650px] rounded-xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+      onClick={onClose}
+    >
+      <div
+        className="w-[620px] rounded-xl bg-white p-6 shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
         <h2 className="mb-6 text-lg font-semibold text-blue-700">
           CREATE NEW REQUEST
         </h2>
 
         <div className="grid grid-cols-2 gap-x-8 gap-y-4">
-          {/* Student Name */}
+          {/* Student Name — read-only from session */}
           <div>
             <label className="mb-1 block text-sm font-medium">Student Name</label>
             <input
               disabled
-              value="Manikandan S"
-              className="h-10 w-full rounded-md border bg-gray-100 px-3 text-sm"
+              value={studentName}
+              className="h-10 w-full rounded-md border bg-gray-100 px-3 text-sm text-gray-600"
             />
           </div>
 
-          {/* Roll Number */}
+          {/* Request Date */}
           <div>
-            <label className="mb-1 block text-sm font-medium">Roll Number</label>
+            <label className="mb-1 block text-sm font-medium">Date</label>
             <input
-              placeholder="Enter your roll number"
+              type="date"
+              value={requestDate}
+              onChange={(e) => setRequestDate(e.target.value)}
               className="h-10 w-full rounded-md border px-3 text-sm"
             />
           </div>
 
-          {/* Registration Number */}
+          {/* Request Category */}
           <div>
-            <label className="mb-1 block text-sm font-medium">
-              Registration Number
-            </label>
-            <input
-              placeholder="Enter your registration number"
-              className="h-10 w-full rounded-md border px-3 text-sm"
-            />
-          </div>
-
-          {/* Course */}
-          <div>
-            <label className="mb-1 block text-sm font-medium">Course</label>
+            <label className="mb-1 block text-sm font-medium">Request Category</label>
             <select
-              value={course}
-              onChange={(e) => setCourse(e.target.value)}
-              className="h-10 w-full rounded-md border px-3 text-sm"
+              value={requestTypeId}
+              onChange={(e) => setRequestTypeId(e.target.value)}
+              disabled={typesLoading}
+              className="h-10 w-full rounded-md border px-3 text-sm disabled:bg-gray-100"
             >
               <option value="" disabled hidden>
-                Select Course
+                {typesLoading ? "Loading…" : "Select Category"}
               </option>
-              <option value="BE">B.E</option>
-              <option value="ME">M.E</option>
+              {requestTypes.map((rt) => (
+                <option key={rt.value} value={rt.value}>
+                  {rt.label}
+                </option>
+              ))}
             </select>
           </div>
 
-          {/* Department */}
+          {/* Requested To — staff dropdown */}
           <div>
-            <label className="mb-1 block text-sm font-medium">Department</label>
+            <label className="mb-1 block text-sm font-medium">Requested To</label>
             <select
-              value={department}
-              onChange={(e) => setDepartment(e.target.value)}
+              value={requestedTo}
+              onChange={(e) => setRequestedTo(e.target.value)}
               className="h-10 w-full rounded-md border px-3 text-sm"
             >
-              <option value="" disabled hidden>
-                Select Department
-              </option>
-              <option value="CSE">CSE</option>
-              <option value="ECE">ECE</option>
-              <option value="MECH">MECH</option>
-            </select>
-          </div>
-
-          {/* Year */}
-          <div>
-            <label className="mb-1 block text-sm font-medium">Year</label>
-            <select
-              value={year}
-              onChange={(e) => {
-                setYear(e.target.value);
-                setSemester("");
-                setSemesterError("");
-              }}
-              className="h-10 w-full rounded-md border px-3 text-sm"
-            >
-              <option value="" disabled hidden>
-                Select Year
-              </option>
-              <option value="1">1</option>
-              <option value="2">2</option>
-              <option value="3">3</option>
-              <option value="4">4</option>
+              <option value="" disabled hidden>Select Staff</option>
+              {staffList.map((s) => {
+                const name = s.full_name
+                  || `${s.first_name || ""} ${s.last_name || ""}`.trim()
+                  || s.user_name;
+                return (
+                  <option key={s.user_name || s.faculty_id} value={s.user_name}>
+                    {name}
+                  </option>
+                );
+              })}
             </select>
           </div>
 
@@ -112,127 +173,51 @@ const CreateRequestModal = ({ onClose }) => {
             <label className="mb-1 block text-sm font-medium">Semester</label>
             <select
               value={semester}
-              disabled={!year}
-              onClick={() => {
-                if (!year) setSemesterError("Please select Year first");
-              }}
-              onChange={(e) => {
-                setSemester(e.target.value);
-                setSemesterError("");
-              }}
-              className={`h-10 w-full rounded-md border px-3 text-sm ${
-                !year ? "bg-gray-100 text-gray-400" : ""
-              } ${semesterError ? "border-red-500" : ""}`}
+              onChange={(e) => { setSemester(e.target.value); setSemesterError(""); }}
+              className={`h-10 w-full rounded-md border px-3 text-sm ${semesterError ? "border-red-500" : ""}`}
             >
-              <option value="" disabled hidden>
-                Select Semester
-              </option>
-
-              {year === "1" && (
-                <>
-                  <option value="1">1</option>
-                  <option value="2">2</option>
-                </>
-              )}
-              {year === "2" && (
-                <>
-                  <option value="3">3</option>
-                  <option value="4">4</option>
-                </>
-              )}
-              {year === "3" && (
-                <>
-                  <option value="5">5</option>
-                  <option value="6">6</option>
-                </>
-              )}
-              {year === "4" && (
-                <>
-                  <option value="7">7</option>
-                  <option value="8">8</option>
-                </>
-              )}
+              <option value="" disabled hidden>Select Semester</option>
+              {["1","2","3","4","5","6","7","8"].map((s) => (
+                <option key={s} value={s}>{s}</option>
+              ))}
             </select>
-
             {semesterError && (
               <p className="mt-1 text-xs text-red-500">{semesterError}</p>
             )}
           </div>
 
-          {/* Requested To */}
-          <div>
-            <label className="mb-1 block text-sm font-medium">Requested to</label>
-            <select
-              value={staff}
-              onChange={(e) => setStaff(e.target.value)}
-              className="h-10 w-full rounded-md border px-3 text-sm"
-            >
-              <option value="" disabled hidden>
-                Select Staff
-              </option>
-              <option value="A">Staff A</option>
-              <option value="B">Staff B</option>
-            </select>
-          </div>
-
-          {/* Request Category (button dropdown) */}
-          <div className="relative">
+          {/* Reason */}
+          <div className="col-span-2">
             <label className="mb-1 block text-sm font-medium">
-              Request Category
+              Reason <span className="text-slate-400">(optional)</span>
             </label>
-
-            <button
-              type="button"
-              onClick={() => setCategoryOpen(!categoryOpen)}
-              className="flex h-10 w-full items-center justify-between rounded-md border px-3 text-sm"
-            >
-              {category || "Select Category"}
-              <span>⌄</span>
-            </button>
-
-            {categoryOpen && (
-              <div className="absolute top-[72px] w-full rounded-lg border bg-white shadow-lg">
-                {["Leave", "Paper Presentation", "Non-Technical Event"].map(
-                  (item) => (
-                    <div
-                      key={item}
-                      onClick={() => {
-                        setCategory(item);
-                        setCategoryOpen(false);
-                      }}
-                      className="cursor-pointer px-4 py-3 text-sm hover:bg-gray-100"
-                    >
-                      {item}
-                    </div>
-                  )
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Date */}
-          <div>
-            <label className="mb-1 block text-sm font-medium">Date</label>
-            <input
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              className="h-10 w-full rounded-md border px-3 text-sm"
+            <textarea
+              value={requestReason}
+              onChange={(e) => setRequestReason(e.target.value)}
+              rows={3}
+              placeholder="Describe the reason for this request…"
+              className="w-full resize-none rounded-md border px-3 py-2 text-sm"
             />
           </div>
         </div>
 
-        {/* Buttons */}
-        <div className="mt-8 flex justify-end gap-4">
-          <button className="rounded-md border border-green-600 px-8 py-2 text-green-700">
-            Submit
-          </button>
-          <Button
-            onClick={onClose}
-            variant="danger"
-            label="Cancel"
-          />
+        {/* Error */}
+        {submitError && (
+          <p className="mt-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-600">
+            {submitError}
+          </p>
+        )}
 
+        {/* Buttons */}
+        <div className="mt-6 flex justify-end gap-4">
+          <button
+            onClick={handleSubmit}
+            disabled={submitting}
+            className="rounded-md border border-green-600 px-8 py-2 text-green-700 disabled:opacity-60 hover:bg-green-50 transition-colors"
+          >
+            {submitting ? "Submitting…" : "Submit"}
+          </button>
+          <Button onClick={onClose} variant="danger" label="Cancel" />
         </div>
       </div>
     </div>
