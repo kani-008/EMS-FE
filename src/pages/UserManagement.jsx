@@ -233,47 +233,79 @@ const UserManagement = () => {
   );
 
   // ──────────────── ACTIONS MENU ────────────────
-  const userActions = [
-    { id: "edit", label: "Edit", icon: assets.edit_icon },
-    { id: "info", label: "Info", icon: assets.info_icon },
-  ];
+  const actions = (row, index) => {
+    const isRowActive = String(row.status || "").toUpperCase() === "ACTIVE";
+    const items = [
+      { id: "edit", label: "Edit", icon: assets.edit_icon },
+      { id: "info", label: "Info", icon: assets.info_icon },
+      {
+        id: "status-toggle",
+        label: isRowActive ? "Deactivate" : "Reactivate",
+        icon: isRowActive ? assets.decline_icon : assets.accept_icon,
+      },
+    ];
 
-  const actions = (row, index) => (
-    <ActionMenu
-      items={userActions}
-      isLast={index === paginatedData.length - 1}
-      isSecondLast={index === paginatedData.length - 2}
-      onAction={(action) => {
-        if (isAdmin) {
-          setSelectedUserAdmin(row);
-          setModalModeAdmin(action.id);
-        } else {
-          const mappedUser = {
-            userId: row.userId,
-            userName: row.userName,
-            first_name: row.firstName,
-            last_name: row.lastName,
-            firstName: row.firstName,
-            lastName: row.lastName,
-            gender: row.gender,
-            course: row.course,
-            department: row.department,
-            department_name: row.department,
-            current_year: row.year,
-            registration_no: row.registrationNo,
-            registrationNo: row.registrationNo,
-            batch: row.batch,
-            semester: row.semester,
-            status: row.status,
-            userRole: row.userRole,
-            timestamp: row.timestamp,
-          };
-          setSelectedUserStaff(mappedUser);
-          setModalModeStaff(action.id);
-        }
-      }}
-    />
-  );
+    return (
+      <ActionMenu
+        items={items}
+        isLast={index === paginatedData.length - 1}
+        isSecondLast={index === paginatedData.length - 2}
+        onAction={async (action) => {
+          if (action.id === "status-toggle") {
+            const targetStatus = isRowActive ? "INACTIVE" : "ACTIVE";
+            const actionName = isRowActive ? "deactivate" : "reactivate";
+            if (window.confirm(`Are you sure you want to ${actionName} this user?`)) {
+              try {
+                const isStudent = String(row.userRole || "").toUpperCase() === "STUDENT";
+                const path = isStudent ? `/students/${row.userId}/status` : `/staff/${row.userId}/status`;
+                const res = await API.patch(path, { status: targetStatus });
+                if (res.data.success) {
+                  alert(`User successfully ${actionName}d.`);
+                  if (isAdmin) {
+                    fetchUsersAdmin();
+                  } else {
+                    fetchUsersStaff();
+                  }
+                } else {
+                  alert("Failed to change status: " + res.data.message);
+                }
+              } catch (err) {
+                alert("Failed to change status: " + (err.response?.data?.message || err.message));
+              }
+            }
+          } else {
+            if (isAdmin) {
+              setSelectedUserAdmin(row);
+              setModalModeAdmin(action.id);
+            } else {
+              const mappedUser = {
+                userId: row.userId,
+                userName: row.userName,
+                first_name: row.firstName,
+                last_name: row.lastName,
+                firstName: row.firstName,
+                lastName: row.lastName,
+                gender: row.gender,
+                course: row.course,
+                department: row.department,
+                department_name: row.department,
+                current_year: row.year,
+                registration_no: row.registrationNo,
+                registrationNo: row.registrationNo,
+                batch: row.batch,
+                semester: row.semester,
+                status: row.status,
+                userRole: row.userRole,
+                timestamp: row.timestamp,
+              };
+              setSelectedUserStaff(mappedUser);
+              setModalModeStaff(action.id);
+            }
+          }
+        }}
+      />
+    );
+  };
 
   // ──────────────── RENDERING ────────────────
   // Guard access to only Admin and Advisor (BUG 2)
