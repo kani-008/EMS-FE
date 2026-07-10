@@ -226,3 +226,39 @@ input[type="number"] {
 .form-value {
   @apply text-sm text-slate-500;
 }
+
+/* ===== FORM INPUT UTILITY =====
+   Single source of truth for text field sizing/typography/color across the
+   whole project (inputs, selects, textareas). Compose with a width utility
+   at the call site, e.g. className="form-input w-full" or "form-input flex-1".
+   Do NOT redefine font-size/color/border directly on form fields elsewhere —
+   use this class so every form in the app stays visually consistent. */
+.form-input {
+  @apply text-sm text-slate-800 font-normal border border-slate-300 rounded-md px-3 py-2 bg-white;
+  @apply placeholder:text-slate-400;
+  @apply focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400;
+  @apply disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed;
+  @apply transition-colors duration-150;
+}
+
+/* Read-only "field" that displays a derived/uneditable value but should
+   still line up with real inputs next to it (e.g. auto-calculated fields). */
+.form-input-static {
+  @apply text-sm text-slate-800 font-normal border border-slate-200 rounded-md px-3 py-2 bg-slate-50;
+  @apply flex items-center min-h-[38px];
+}
+
+/* ===== TOAST ANIMATION ===== */
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.toast-in {
+  animation: toast-in 0.18s ease-out;
+}

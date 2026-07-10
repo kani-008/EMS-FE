@@ -6,9 +6,7 @@ import UserManagement from "./pages/UserManagement";
 import RequestManagement from "./pages/RequestManagement";
 import Settings from "./pages/Settings";
 import Reports from "./pages/Reports";
-import AdminProfile from "./pages/Profile/AdminProfile";
-import StaffProfile from "./pages/Profile/StaffProfile";
-import StudentProfile from "./pages/Profile/StudentProfile";
+import Profile from "./pages/Profile";
 import ProtectedRoute from "./components/route/ProtectedRoute";
 import { STAFF_ROLES } from "./components/constants";
 
@@ -26,7 +24,7 @@ const App = () => {
         <Route path="/student" element={<Layout />}>
           <Route index element={<Dashboard />} />
           <Route path="requests" element={<RequestManagement />} />
-          <Route path="profile" element={<StudentProfile />} />
+          <Route path="profile" element={<Profile />} />
         </Route>
       </Route>
 
@@ -38,7 +36,7 @@ const App = () => {
           <Route path="users" element={<UserManagement />} />
           <Route path="settings" element={<Settings />} />
           <Route path="reports" element={<Reports />} />
-          <Route path="profile" element={<StaffProfile />} />
+          <Route path="profile" element={<Profile />} />
         </Route>
       </Route>
 
@@ -50,7 +48,7 @@ const App = () => {
           <Route path="users" element={<UserManagement />} />
           <Route path="settings" element={<Settings />} />
           <Route path="reports" element={<Reports />} />
-          <Route path="profile" element={<AdminProfile />} />
+          <Route path="profile" element={<Profile />} />
         </Route>
       </Route>
 

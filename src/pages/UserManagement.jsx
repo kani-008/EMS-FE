@@ -13,6 +13,7 @@ import CreateStaffForm from "../components/CreateStaffForm";
 import UserDetailsModalAdmin from "../components/UserDetailsModal";
 import EditUserDetailsStaff from "../components/EditUserDetails";
 import { useAuth } from "../components/AuthContext";
+import { useToast } from "../components/Toast";
 import { adminUserColumns, staffUserColumns } from "../components/UserManagement/columns";
 import { filterUsers } from "../components/UserManagement/filtersLogic";
 import API from "../ApiCall/Api";
@@ -54,6 +55,7 @@ function buildFullName(firstName, lastName) {
 
 const UserManagement = () => {
   const { user } = useAuth();
+  const toast = useToast();
   const role = user?.role;
   const isAdmin = role === "ADMIN";
   const isAdvisor = role === "ADVISOR";
@@ -260,17 +262,17 @@ const UserManagement = () => {
                 const path = isStudent ? `/students/${row.userId}/status` : `/staff/${row.userId}/status`;
                 const res = await API.patch(path, { status: targetStatus });
                 if (res.data.success) {
-                  alert(`User successfully ${actionName}d.`);
+                  toast.success(`User successfully ${actionName}d.`);
                   if (isAdmin) {
                     fetchUsersAdmin();
                   } else {
                     fetchUsersStaff();
                   }
                 } else {
-                  alert("Failed to change status: " + res.data.message);
+                  toast.error("Failed to change status: " + res.data.message);
                 }
               } catch (err) {
-                alert("Failed to change status: " + (err.response?.data?.message || err.message));
+                toast.error("Failed to change status: " + (err.response?.data?.message || err.message));
               }
             }
           } else {

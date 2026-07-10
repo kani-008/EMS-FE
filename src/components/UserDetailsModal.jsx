@@ -6,6 +6,7 @@
 import { useState, useEffect } from "react";
 import Button from "./Button";
 import API from "../ApiCall/Api";
+import { useToast } from "./Toast";
 
 function ro(val) {
   return String(val ?? "-").trim() || "-";
@@ -23,6 +24,7 @@ function InfoRow({ label, value }) {
 
 // ── EDIT MODE ─────────────────────────────────────────────────────────────────
 function EditStaffModal({ user, onClose, onSaved }) {
+  const toast = useToast();
   const [departments, setDepartments] = useState([]);
   const [staffRoles, setStaffRoles] = useState([]);
   const [firstName, setFirstName] = useState(user.first_name || "");
@@ -36,6 +38,7 @@ function EditStaffModal({ user, onClose, onSaved }) {
     user.current_year != null ? String(user.current_year) : ""
   );
   const [loading, setLoading] = useState(false);
+  const [formError, setFormError] = useState("");
 
   // Academic year preview: derived from batch + course (never stored)
   const courseDuration = String(user.course || "").startsWith("M") ? 2 : 4;
@@ -56,9 +59,10 @@ function EditStaffModal({ user, onClose, onSaved }) {
   }, []);
 
   const handleSave = async () => {
-    if (!firstName.trim()) { alert("First name is required"); return; }
-    if (!department) { alert("Department is required"); return; }
-    if (!role) { alert("Role is required"); return; }
+    if (!firstName.trim()) { setFormError("First name is required."); return; }
+    if (!department) { setFormError("Department is required."); return; }
+    if (!role) { setFormError("Role is required."); return; }
+    setFormError("");
 
     setLoading(true);
     try {
@@ -70,11 +74,11 @@ function EditStaffModal({ user, onClose, onSaved }) {
         batch: batch.trim() || null,
         currentYear: currentYear ? parseInt(currentYear, 10) : null,
       });
-      alert(`${user.userId} updated successfully`);
-      onSaved();
+      await onSaved();
       onClose();
+      toast.success(`${user.userId} updated successfully.`);
     } catch (err) {
-      alert("Error: " + err.message);
+      setFormError(err.response?.data?.message || err.message || "Failed to update staff user.");
     } finally {
       setLoading(false);
     }
@@ -107,7 +111,7 @@ function EditStaffModal({ user, onClose, onSaved }) {
             <select
               value={role}
               onChange={(e) => setRole(e.target.value)}
-              className="w-full border border-slate-300 rounded-md px-3 py-2 focus:outline-none"
+              className="form-input w-full"
             >
               <option value="" disabled>Choose Role</option>
               {staffRoles.map((r) => (
@@ -124,7 +128,7 @@ function EditStaffModal({ user, onClose, onSaved }) {
             <input
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
-              className="w-full border border-slate-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              className="form-input w-full"
               placeholder="First name"
             />
           </div>
@@ -135,7 +139,7 @@ function EditStaffModal({ user, onClose, onSaved }) {
             <input
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
-              className="w-full border border-slate-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              className="form-input w-full"
               placeholder="Last name"
             />
           </div>
@@ -146,7 +150,7 @@ function EditStaffModal({ user, onClose, onSaved }) {
             <select
               value={department}
               onChange={(e) => setDepartment(e.target.value)}
-              className="w-full border border-slate-300 rounded-md px-3 py-2 focus:outline-none"
+              className="form-input w-full"
             >
               <option value="" disabled>Choose Department</option>
               {departments.map((d) => (
@@ -163,7 +167,7 @@ function EditStaffModal({ user, onClose, onSaved }) {
             <input
               value={batch}
               onChange={(e) => setBatch(e.target.value)}
-              className="w-full border border-slate-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              className="form-input w-full"
               placeholder="e.g. 2023"
             />
           </div>
@@ -173,11 +177,7 @@ function EditStaffModal({ user, onClose, onSaved }) {
             <label className="form-label">
               Academic Year <span className="font-normal text-slate-400">(auto)</span>
             </label>
-            <input
-              readOnly
-              value={academicYear}
-              className="w-full border border-slate-200 rounded-md px-3 py-2 bg-slate-50 text-slate-700 cursor-not-allowed"
-            />
+            <div className="form-input-static w-full">{academicYear}</div>
           </div>
 
           {/* Current Year (study year) — editable */}
@@ -186,7 +186,7 @@ function EditStaffModal({ user, onClose, onSaved }) {
             <select
               value={currentYear}
               onChange={(e) => setCurrentYear(e.target.value)}
-              className="w-full border border-slate-300 rounded-md px-3 py-2 focus:outline-none"
+              className="form-input w-full"
             >
               <option value="">— None —</option>
               <option value="1">1</option>
@@ -195,6 +195,12 @@ function EditStaffModal({ user, onClose, onSaved }) {
               <option value="4">4</option>
             </select>
           </div>
+
+          {formError && (
+            <div className="col-span-2 text-xs text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
+              ⚠ {formError}
+            </div>
+          )}
 
         </div>
 

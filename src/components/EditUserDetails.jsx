@@ -3,6 +3,7 @@ import StatusBadge from "./StatusBadge";
 import Button from "./Button";
 import Dropdown from "./Dropdown";
 import API from "../ApiCall/Api";
+import { useToast } from "./Toast";
 
 function ro(val) {
   return String(val ?? "-").trim() || "-";
@@ -13,15 +14,14 @@ function InfoField({ label, value, className = "" }) {
   return (
     <div className={className}>
       <p className="form-label">{label}</p>
-      <div className="w-full border border-slate-200 rounded-md px-3 py-2 bg-slate-50 min-h-[38px] flex items-center form-value">
-        {value || "—"}
-      </div>
+      <div className="form-input-static w-full form-value">{value || "—"}</div>
     </div>
   );
 }
 
 // ── MAIN COMPONENT ────────────────────────────────────────────────────────────
 const EditUserDetails = ({ user, mode, onClose, onSaved }) => {
+  const toast = useToast();
   // Edit form states (unconditional)
   const [firstName, setFirstName] = useState(user?.firstName || user?.first_name || "");
   const [lastName, setLastName] = useState(user?.lastName || user?.last_name || "");
@@ -126,9 +126,9 @@ const EditUserDetails = ({ user, mode, onClose, onSaved }) => {
 
       await API.put(`/students/${rollNo}`, body);
 
-      alert("Student updated successfully!");
-      if (onSaved) await onSaved();
+      await (onSaved ? onSaved() : null);
       onClose();
+      toast.success("Student updated successfully.");
     } catch (err) {
       setError(err.message);
     } finally {
@@ -171,18 +171,25 @@ const EditUserDetails = ({ user, mode, onClose, onSaved }) => {
       // Staff password change goes through /profile, not /staff/:id — that
       // endpoint only updates identity/role fields. Only attempted if the
       // admin actually filled in a new password.
-      if (newPassword && newPassword === confirmPassword) {
+      const attemptedPwdReset = newPassword && newPassword === confirmPassword;
+
+      await (onSaved ? onSaved() : null);
+      onClose();
+
+      if (attemptedPwdReset) {
         // No admin-initiated staff password reset endpoint currently exists
         // (staff can only change their own password via /profile). Surface
-        // that clearly instead of silently doing nothing.
-        setError("Identity details saved. Note: resetting another staff member's password isn't supported yet — they need to change it themselves from their own Profile page.");
+        // that clearly — as a toast, since the modal is already closing and
+        // an inline message here would never be seen.
+        toast.info(
+          "Identity details saved. Note: resetting another staff member's password isn't supported yet — they need to change it themselves from their own Profile page.",
+          7000
+        );
+      } else {
+        toast.success("Staff updated successfully.");
       }
-
-      alert("Staff updated successfully!");
-      if (onSaved) await onSaved();
-      onClose();
     } catch (err) {
-      setError(err.message);
+      setError(err.response?.data?.message || err.message);
     } finally {
       setLoading(false);
     }
@@ -208,7 +215,7 @@ const EditUserDetails = ({ user, mode, onClose, onSaved }) => {
               <input
                 readOnly
                 value={user.department_name || user.department || "—"}
-                className="w-full border border-slate-200 rounded-md px-3 py-2 bg-slate-100 text-slate-700 cursor-not-allowed"
+                className="form-input-static w-full"
               />
             </div>
 
@@ -218,7 +225,7 @@ const EditUserDetails = ({ user, mode, onClose, onSaved }) => {
               <input
                 readOnly
                 value={user.batch || "—"}
-                className="w-full border border-slate-200 rounded-md px-3 py-2 bg-slate-100 text-slate-700 cursor-not-allowed"
+                className="form-input-static w-full"
               />
             </div>
 
@@ -228,7 +235,7 @@ const EditUserDetails = ({ user, mode, onClose, onSaved }) => {
               <input
                 readOnly
                 value={rollNo}
-                className="w-full border border-slate-200 rounded-md px-3 py-2 bg-slate-100 text-slate-700 font-mono cursor-not-allowed"
+                className="form-input-static w-full font-mono"
               />
             </div>
 
@@ -238,7 +245,7 @@ const EditUserDetails = ({ user, mode, onClose, onSaved }) => {
               <input
                 value={registrationNo}
                 onChange={(e) => setRegistrationNo(e.target.value)}
-                className="w-full border border-slate-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                className="form-input w-full"
                 placeholder="e.g. 910023104001"
               />
             </div>
@@ -249,7 +256,7 @@ const EditUserDetails = ({ user, mode, onClose, onSaved }) => {
               <input
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
-                className="w-full border border-slate-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                className="form-input w-full"
                 placeholder="e.g. John"
               />
             </div>
@@ -260,7 +267,7 @@ const EditUserDetails = ({ user, mode, onClose, onSaved }) => {
               <input
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
-                className="w-full border border-slate-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                className="form-input w-full"
                 placeholder="e.g. Doe"
               />
             </div>
@@ -271,7 +278,7 @@ const EditUserDetails = ({ user, mode, onClose, onSaved }) => {
               <select
                 value={gender}
                 onChange={(e) => setGender(e.target.value)}
-                className="w-full border border-slate-300 rounded-md px-3 py-2 focus:outline-none"
+                className="form-input w-full"
               >
                 <option value="Male">Male</option>
                 <option value="Female">Female</option>
@@ -284,7 +291,7 @@ const EditUserDetails = ({ user, mode, onClose, onSaved }) => {
               <select
                 value={course}
                 onChange={(e) => setCourse(e.target.value)}
-                className="w-full border border-slate-300 rounded-md px-3 py-2 focus:outline-none"
+                className="form-input w-full"
               >
                 <option value="B.E">B.E</option>
                 <option value="M.E">M.E</option>
@@ -303,7 +310,7 @@ const EditUserDetails = ({ user, mode, onClose, onSaved }) => {
                     type="password"
                     value={newPassword}
                     onChange={(e) => { setNewPassword(e.target.value); setPwdError(""); }}
-                    className="w-full border border-slate-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    className="form-input w-full"
                     placeholder="Min 6 characters"
                   />
                 </div>
@@ -313,7 +320,7 @@ const EditUserDetails = ({ user, mode, onClose, onSaved }) => {
                     type="password"
                     value={confirmPassword}
                     onChange={(e) => { setConfirmPassword(e.target.value); setPwdError(""); }}
-                    className="w-full border border-slate-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    className="form-input w-full"
                     placeholder="Repeat new password"
                   />
                 </div>
@@ -372,7 +379,7 @@ const EditUserDetails = ({ user, mode, onClose, onSaved }) => {
               <input
                 value={staffFirstName}
                 onChange={(e) => setStaffFirstName(e.target.value)}
-                className="w-full border border-slate-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                className="form-input w-full"
                 placeholder="e.g. John"
               />
             </div>
@@ -383,7 +390,7 @@ const EditUserDetails = ({ user, mode, onClose, onSaved }) => {
               <input
                 value={staffLastName}
                 onChange={(e) => setStaffLastName(e.target.value)}
-                className="w-full border border-slate-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                className="form-input w-full"
                 placeholder="e.g. Doe"
               />
             </div>
@@ -416,7 +423,7 @@ const EditUserDetails = ({ user, mode, onClose, onSaved }) => {
               <input
                 value={staffBatch}
                 onChange={(e) => setStaffBatch(e.target.value)}
-                className="w-full border border-slate-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                className="form-input w-full"
                 placeholder="e.g. 2023 or N/A"
               />
             </div>
@@ -430,7 +437,7 @@ const EditUserDetails = ({ user, mode, onClose, onSaved }) => {
                 max="4"
                 value={staffCurrentYear}
                 onChange={(e) => setStaffCurrentYear(e.target.value)}
-                className="w-full border border-slate-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                className="form-input w-full"
               />
             </div>
 
@@ -450,7 +457,7 @@ const EditUserDetails = ({ user, mode, onClose, onSaved }) => {
                     type="password"
                     value={newPassword}
                     onChange={(e) => { setNewPassword(e.target.value); setPwdError(""); }}
-                    className="w-full border border-slate-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    className="form-input w-full"
                     placeholder="Min 6 characters"
                   />
                 </div>
@@ -460,7 +467,7 @@ const EditUserDetails = ({ user, mode, onClose, onSaved }) => {
                     type="password"
                     value={confirmPassword}
                     onChange={(e) => { setConfirmPassword(e.target.value); setPwdError(""); }}
-                    className="w-full border border-slate-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    className="form-input w-full"
                     placeholder="Repeat new password"
                   />
                 </div>

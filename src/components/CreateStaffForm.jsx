@@ -2,8 +2,10 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import Button from "./Button";
 import Dropdown from "./Dropdown";
 import API from "../ApiCall/Api";
+import { useToast } from "./Toast";
 
 const CreateStaffForm = ({ onClose, refreshUsers }) => {
+  const toast = useToast();
   const [departments, setDepartments] = useState([]);
   const [staffRoles, setStaffRoles]   = useState([]);
 
@@ -111,24 +113,28 @@ const CreateStaffForm = ({ onClose, refreshUsers }) => {
     ? `${ORDINAL[derivedCurrentYear - 1]} Year`
     : "—";
 
+  // ── Form-level validation message (inline, replaces alert()) ────────────────
+  const [formError, setFormError] = useState("");
+
   // ── Single staff create ──────────────────────────────────────────────────────
   const handleCreate = async () => {
     if (!firstName || !gender || !department || !staffRole) {
-      alert("Please fill all required fields");
+      setFormError("Please fill all required fields.");
       return;
     }
     if (isAdvisor && !batch) {
-      alert("Batch is required for Advisors.");
+      setFormError("Batch is required for Advisors.");
       return;
     }
     if (isAdvisor && !course) {
-      alert("Please select a course for Advisor role.");
+      setFormError("Please select a course for Advisor role.");
       return;
     }
     if (isAdvisor && !batchValid) {
-      alert(batchError || "Please enter a valid batch year before creating.");
+      setFormError(batchError || "Please enter a valid batch year before creating.");
       return;
     }
+    setFormError("");
 
     const payload = {
       firstName:   firstName.trim(),
@@ -148,12 +154,16 @@ const CreateStaffForm = ({ onClose, refreshUsers }) => {
       const data = res.data;
 
       const generatedUsername = data.username || "unknown";
-      alert(`Staff user "${generatedUsername}" created successfully!\nTemporary password: ${generatedUsername}7311`);
+      // Refresh the table first so it's already showing the new row by the
+      // time the modal closes — no intermediate dialog, no manual dismissal.
       await refreshUsers();
       onClose();
+      toast.success(
+        `Staff user "${generatedUsername}" created successfully.\nTemporary password: ${generatedUsername}7311`
+      );
     } catch (err) {
       console.error("Create staff error:", err);
-      alert("Error: " + err.message);
+      toast.error(err.response?.data?.message || err.message || "Failed to create staff user.");
     } finally {
       setLoading(false);
     }
@@ -168,7 +178,7 @@ const CreateStaffForm = ({ onClose, refreshUsers }) => {
 
     const ext = file.name.split(".").pop().toLowerCase();
     if (!["xlsx", "csv"].includes(ext)) {
-      alert("Only .xlsx and .csv files are accepted.");
+      toast.error("Only .xlsx and .csv files are accepted.");
       return;
     }
 
@@ -182,9 +192,14 @@ const CreateStaffForm = ({ onClose, refreshUsers }) => {
       const data = res.data;
       setUploadResult(data);
       await refreshUsers();
+      if (data.failed) {
+        toast.info(`Upload complete — ${data.created} created, ${data.failed} failed. See details below.`);
+      } else {
+        toast.success(`Upload complete — ${data.created} staff user(s) created.`);
+      }
     } catch (err) {
       console.error("Excel upload error:", err);
-      alert("Upload error: " + err.message);
+      toast.error(err.response?.data?.message || err.message || "Upload failed.");
     } finally {
       setUploading(false);
     }
@@ -258,7 +273,7 @@ const CreateStaffForm = ({ onClose, refreshUsers }) => {
               <select
                 value={course}
                 onChange={(e) => handleCourseChange(e.target.value)}
-                className="w-full border border-slate-300 rounded-md px-3 py-2 text-slate-800 focus:outline-none"
+                className="form-input w-full"
               >
                 <option value="" disabled>Choose Course</option>
                 <option value="B.E">B.E</option>
@@ -283,12 +298,12 @@ const CreateStaffForm = ({ onClose, refreshUsers }) => {
                   setBatchError("");
                 }}
                 onBlur={handleBatchBlur}
-                className={`w-full border rounded-md px-3 py-2 text-slate-800 focus:outline-none ${
+                className={`form-input w-full ${
                   batchValid === false
-                    ? "border-red-400 bg-red-50"
+                    ? "border-red-400 bg-red-50 focus:ring-red-300 focus:border-red-400"
                     : batchValid === true
-                    ? "border-green-400"
-                    : "border-slate-300"
+                    ? "border-green-400 focus:ring-green-300 focus:border-green-400"
+                    : ""
                 }`}
                 placeholder="e.g. 2023"
               />
@@ -308,16 +323,14 @@ const CreateStaffForm = ({ onClose, refreshUsers }) => {
             <div />
           )}
 
-          {/* Current Year — derived by backend SP, displayed as read-only badge */}
+          {/* Current Year — derived by backend SP, displayed as read-only field.
+              Same text-sm / text-slate-800 styling as every other field in this
+              form, so it doesn't stand out as bold/blue against its neighbors. */}
           {isAdvisor ? (
             <div>
               <label className="form-label">Current Year</label>
-              <div className="flex items-center h-[38px] px-3 rounded-md border border-slate-200 bg-slate-50">
-                <span
-                  className={`text-sm font-semibold ${
-                    batchValid ? "text-blue-700" : "text-slate-400"
-                  }`}
-                >
+              <div className="form-input-static w-full">
+                <span className={batchValid ? "" : "text-slate-400"}>
                   {batchValid ? currentYearLabel : "—"}
                 </span>
                 {batchValid && (
@@ -326,9 +339,6 @@ const CreateStaffForm = ({ onClose, refreshUsers }) => {
                   </span>
                 )}
               </div>
-              <p className="text-[11px] text-slate-400 mt-1">
-                Derived by server from batch · not editable
-              </p>
             </div>
           ) : (
             <div />
@@ -343,7 +353,7 @@ const CreateStaffForm = ({ onClose, refreshUsers }) => {
             <input
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
-              className="w-full border border-slate-300 rounded-md px-3 py-2 text-slate-800 focus:outline-none"
+              className="form-input w-full"
               placeholder="e.g. John"
             />
           </div>
@@ -354,7 +364,7 @@ const CreateStaffForm = ({ onClose, refreshUsers }) => {
             <input
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
-              className="w-full border border-slate-300 rounded-md px-3 py-2 text-slate-800 focus:outline-none"
+              className="form-input w-full"
               placeholder="e.g. Smith"
             />
           </div>
@@ -365,7 +375,7 @@ const CreateStaffForm = ({ onClose, refreshUsers }) => {
             <select
               value={gender}
               onChange={(e) => setGender(e.target.value)}
-              className="w-full border border-slate-300 rounded-md px-3 py-2 text-slate-800 focus:outline-none"
+              className="form-input w-full"
             >
               <option value="" disabled>Choose Gender</option>
               <option value="Male">Male</option>
@@ -412,6 +422,13 @@ const CreateStaffForm = ({ onClose, refreshUsers }) => {
                   </button>
                 </>
               )}
+            </div>
+          )}
+
+          {/* ── Inline validation error (replaces alert()) ──────────────────────── */}
+          {formError && (
+            <div className="col-span-2 text-xs text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
+              ⚠ {formError}
             </div>
           )}
 

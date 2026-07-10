@@ -18,13 +18,13 @@ const ProtectedRoute = ({ roles, redirectTo = "/login" }) => {
   const { user, loading } = useAuth();
   const location = useLocation();
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-slate-500 text-sm">Loading...</div>
-      </div>
-    );
-  }
+  // if (loading) {
+  //   return (
+  //     <div className="min-h-screen flex items-center justify-center bg-gray-50">
+  //       <div className="text-slate-500 text-sm">Loading...</div>
+  //     </div>
+  //   );
+  // }
 
   // Not logged in → go to login
   if (!user) return <Navigate to={redirectTo} replace />;

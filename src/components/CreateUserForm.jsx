@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import Button from "./Button";
 import Dropdown from "./Dropdown";
 import API from "../ApiCall/Api";
+import { useToast } from "./Toast";
 
 const getDeptPrefix = (deptName) => {
   const name = String(deptName || "").trim().toUpperCase();
@@ -11,6 +12,7 @@ const getDeptPrefix = (deptName) => {
 };
 
 const CreateUserForm = ({ onClose, refreshUsers, advisorContext }) => {
+  const toast = useToast();
   const isStaffFlow = !!advisorContext;
 
   // ── Unified State ──
@@ -50,6 +52,7 @@ const CreateUserForm = ({ onClose, refreshUsers, advisorContext }) => {
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadResult, setUploadResult] = useState(null);
+  const [formError, setFormError] = useState("");
   const fileInputRef = useRef(null);
 
   // Load departments if Admin
@@ -99,7 +102,7 @@ const CreateUserForm = ({ onClose, refreshUsers, advisorContext }) => {
 
     const ext = file.name.split(".").pop().toLowerCase();
     if (ext !== "xlsx") {
-      alert("Only .xlsx files are accepted.");
+      toast.error("Only .xlsx files are accepted.");
       return;
     }
 
@@ -109,7 +112,7 @@ const CreateUserForm = ({ onClose, refreshUsers, advisorContext }) => {
     const activeSemester = isStaffFlow ? advisorContext?.derived_semester : semesterAdmin;
 
     if (!activeDept || !activeBatch || !activeCourse || !activeSemester) {
-      alert("Please select Department, Batch, Course, and Semester before uploading Excel.");
+      toast.error("Please select Department, Batch, Course, and Semester before uploading Excel.");
       return;
     }
 
@@ -127,9 +130,14 @@ const CreateUserForm = ({ onClose, refreshUsers, advisorContext }) => {
       const data = res.data;
       setUploadResult(data);
       await refreshUsers();
+      if (data.failed) {
+        toast.info(`Upload complete — ${data.created} created, ${data.failed} failed. See details below.`);
+      } else {
+        toast.success(`Upload complete — ${data.created} student(s) created.`);
+      }
     } catch (err) {
       console.error("Excel upload error:", err);
-      alert("Upload error: " + (err.response?.data?.message || err.message));
+      toast.error(err.response?.data?.message || err.message || "Upload failed.");
     } finally {
       setUploading(false);
     }
@@ -156,6 +164,7 @@ const CreateUserForm = ({ onClose, refreshUsers, advisorContext }) => {
   const handleCreate = async () => {
     setLoading(true);
     setUploadResult(null);
+    setFormError("");
 
     const activeDept = isStaffFlow ? departmentStaff : departmentAdmin;
     const activeBatch = isStaffFlow ? batchStaff : batchAdmin;
@@ -164,7 +173,7 @@ const CreateUserForm = ({ onClose, refreshUsers, advisorContext }) => {
     const activePrefix = isStaffFlow ? prefixStaff : prefixAdmin;
 
     if (!activeDept || !activeBatch || !activeCourse || !activeSemester) {
-      alert("Please fill all required department, batch, course, and semester fields.");
+      setFormError("Please fill all required department, batch, course, and semester fields.");
       setLoading(false);
       return;
     }
@@ -174,7 +183,7 @@ const CreateUserForm = ({ onClose, refreshUsers, advisorContext }) => {
       const toVal = isStaffFlow ? rangeToStaff : rangeToAdmin;
 
       if (!activePrefix || !fromVal || !toVal) {
-        alert("Please fill all range fields.");
+        setFormError("Please fill all range fields.");
         setLoading(false);
         return;
       }
@@ -190,11 +199,11 @@ const CreateUserForm = ({ onClose, refreshUsers, advisorContext }) => {
           batch: String(activeBatch),
         });
         const data = res.data;
-        alert(`Range creation complete — ${data.created} created successfully, ${data.failed} failed.`);
         await refreshUsers();
         onClose();
+        toast.success(`Range creation complete — ${data.created} created, ${data.failed} failed.`);
       } catch (err) {
-        alert("Error: " + (err.response?.data?.message || err.message));
+        setFormError(err.response?.data?.message || err.message || "Failed to create students.");
       } finally {
         setLoading(false);
       }
@@ -207,7 +216,7 @@ const CreateUserForm = ({ onClose, refreshUsers, advisorContext }) => {
       const activeRegNo = isStaffFlow ? registrationNo : registrationNoAdmin;
 
       if (!activeRollNo || !activeFirstName) {
-        alert("Roll number and first name are required.");
+        setFormError("Roll number and first name are required.");
         setLoading(false);
         return;
       }
@@ -224,11 +233,11 @@ const CreateUserForm = ({ onClose, refreshUsers, advisorContext }) => {
           department: activeDept,
           batch: String(activeBatch),
         });
-        alert("Student created successfully!");
         await refreshUsers();
         onClose();
+        toast.success("Student created successfully.");
       } catch (err) {
-        alert("Error: " + (err.response?.data?.message || err.message));
+        setFormError(err.response?.data?.message || err.message || "Failed to create student.");
       } finally {
         setLoading(false);
       }
@@ -250,7 +259,7 @@ const CreateUserForm = ({ onClose, refreshUsers, advisorContext }) => {
               <input
                 value={departmentStaff || "Loading..."}
                 readOnly
-                className="w-full border border-slate-300 rounded-md px-3 py-2 bg-gray-100 text-slate-600 outline-none cursor-not-allowed"
+                className="form-input-static w-full"
               />
             ) : (
               <Dropdown
@@ -268,14 +277,14 @@ const CreateUserForm = ({ onClose, refreshUsers, advisorContext }) => {
               <input
                 value={batchStaff || "Loading..."}
                 readOnly
-                className="w-full border border-slate-300 rounded-md px-3 py-2 bg-gray-100 text-slate-600 outline-none cursor-not-allowed"
+                className="form-input-static w-full"
               />
             ) : (
               <input
                 type="text"
                 value={batchAdmin}
                 onChange={(e) => setBatchAdmin(e.target.value)}
-                className="w-full border border-slate-300 rounded-md px-3 py-2 text-slate-800 focus:outline-none"
+                className="form-input w-full"
                 placeholder="e.g. 2023"
               />
             )}
@@ -288,7 +297,7 @@ const CreateUserForm = ({ onClose, refreshUsers, advisorContext }) => {
               <select
                 value={courseStaff}
                 onChange={(e) => setCourseStaff(e.target.value)}
-                className="w-full border border-slate-300 rounded-md px-3 py-2 text-slate-800 focus:outline-none"
+                className="form-input w-full"
               >
                 <option value="B.E">B.E</option>
                 <option value="M.E">M.E</option>
@@ -297,7 +306,7 @@ const CreateUserForm = ({ onClose, refreshUsers, advisorContext }) => {
               <select
                 value={courseAdmin}
                 onChange={(e) => setCourseAdmin(e.target.value)}
-                className="w-full border border-slate-300 rounded-md px-3 py-2 text-slate-800 focus:outline-none"
+                className="form-input w-full"
               >
                 <option value="B.E">B.E</option>
                 <option value="M.E">M.E</option>
@@ -308,13 +317,11 @@ const CreateUserForm = ({ onClose, refreshUsers, advisorContext }) => {
           <div>
             <label className="form-label font-semibold text-slate-700">Semester</label>
             {isStaffFlow ? (
-              <div className="flex items-center h-[38px] px-3 rounded-md border border-slate-200 bg-slate-50">
-                <span className="text-sm font-semibold text-blue-700">
-                  {advisorContext?.derived_semester || "—"}
-                </span>
+              <div className="form-input-static w-full">
+                <span>{advisorContext?.derived_semester || "—"}</span>
                 {advisorContext?.derived_semester && (
                   <span className="ml-auto text-[10px] font-medium uppercase tracking-wide text-slate-400">
-                    AUTO-CALCULATED
+                    auto
                   </span>
                 )}
               </div>
@@ -322,7 +329,7 @@ const CreateUserForm = ({ onClose, refreshUsers, advisorContext }) => {
               <select
                 value={semesterAdmin}
                 onChange={(e) => setSemesterAdmin(e.target.value)}
-                className="w-full border border-slate-300 rounded-md px-3 py-2 text-slate-800 focus:outline-none"
+                className="form-input w-full"
               >
                 <option value="" disabled>Choose Semester</option>
                 {[...Array(8)].map((_, i) => (
@@ -341,7 +348,7 @@ const CreateUserForm = ({ onClose, refreshUsers, advisorContext }) => {
                 setCreationType(e.target.value);
                 setUploadResult(null);
               }}
-              className="w-full border border-slate-300 rounded-md px-3 py-2 text-slate-800 focus:outline-none"
+              className="form-input w-full"
             >
               <option value="Range">Range</option>
               <option value="Individual">Individual</option>
@@ -355,14 +362,14 @@ const CreateUserForm = ({ onClose, refreshUsers, advisorContext }) => {
                 <input
                   value={prefixStaff}
                   onChange={(e) => setPrefixStaff(e.target.value)}
-                  className="w-full border border-slate-300 rounded-md px-3 py-2 text-slate-800 focus:outline-none"
+                  className="form-input w-full"
                   placeholder="e.g. 23CSE"
                 />
               ) : (
                 <input
                   value={prefixAdmin}
                   onChange={(e) => setPrefixAdmin(e.target.value)}
-                  className="w-full border border-slate-300 rounded-md px-3 py-2 text-slate-800 focus:outline-none"
+                  className="form-input w-full"
                   placeholder="e.g. 23CSE"
                 />
               )}
@@ -374,14 +381,14 @@ const CreateUserForm = ({ onClose, refreshUsers, advisorContext }) => {
                 <input
                   value={rollNo}
                   onChange={(e) => setRollNo(e.target.value)}
-                  className="w-full border border-slate-300 rounded-md px-3 py-2 text-slate-800 focus:outline-none"
+                  className="form-input w-full"
                   placeholder="e.g. 23CSE101"
                 />
               ) : (
                 <input
                   value={rollNoAdmin}
                   onChange={(e) => setRollNoAdmin(e.target.value)}
-                  className="w-full border border-slate-300 rounded-md px-3 py-2 text-slate-800 focus:outline-none"
+                  className="form-input w-full"
                   placeholder="e.g. 23CSE101"
                 />
               )}
@@ -399,7 +406,7 @@ const CreateUserForm = ({ onClose, refreshUsers, advisorContext }) => {
                     type="number"
                     value={rangeFromStaff}
                     onChange={(e) => setRangeFromStaff(e.target.value)}
-                    className="w-full border border-slate-300 rounded-md px-3 py-2 text-slate-800 focus:outline-none"
+                    className="form-input w-full"
                     placeholder="e.g. 1"
                   />
                 ) : (
@@ -407,7 +414,7 @@ const CreateUserForm = ({ onClose, refreshUsers, advisorContext }) => {
                     type="number"
                     value={rangeFromAdmin}
                     onChange={(e) => setRangeFromAdmin(e.target.value)}
-                    className="w-full border border-slate-300 rounded-md px-3 py-2 text-slate-800 focus:outline-none"
+                    className="form-input w-full"
                     placeholder="e.g. 1"
                   />
                 )}
@@ -420,7 +427,7 @@ const CreateUserForm = ({ onClose, refreshUsers, advisorContext }) => {
                     type="number"
                     value={rangeToStaff}
                     onChange={(e) => setRangeToStaff(e.target.value)}
-                    className="w-full border border-slate-300 rounded-md px-3 py-2 text-slate-800 focus:outline-none"
+                    className="form-input w-full"
                     placeholder="e.g. 60"
                   />
                 ) : (
@@ -428,7 +435,7 @@ const CreateUserForm = ({ onClose, refreshUsers, advisorContext }) => {
                     type="number"
                     value={rangeToAdmin}
                     onChange={(e) => setRangeToAdmin(e.target.value)}
-                    className="w-full border border-slate-300 rounded-md px-3 py-2 text-slate-800 focus:outline-none"
+                    className="form-input w-full"
                     placeholder="e.g. 60"
                   />
                 )}
@@ -443,14 +450,14 @@ const CreateUserForm = ({ onClose, refreshUsers, advisorContext }) => {
                   <input
                     value={registrationNo}
                     onChange={(e) => setRegistrationNo(e.target.value)}
-                    className="w-full border border-slate-300 rounded-md px-3 py-2 text-slate-800 focus:outline-none"
+                    className="form-input w-full"
                     placeholder="e.g. 910023104001"
                   />
                 ) : (
                   <input
                     value={registrationNoAdmin}
                     onChange={(e) => setRegistrationNoAdmin(e.target.value)}
-                    className="w-full border border-slate-300 rounded-md px-3 py-2 text-slate-800 focus:outline-none"
+                    className="form-input w-full"
                     placeholder="e.g. 910023104001"
                   />
                 )}
@@ -462,14 +469,14 @@ const CreateUserForm = ({ onClose, refreshUsers, advisorContext }) => {
                   <input
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
-                    className="w-full border border-slate-300 rounded-md px-3 py-2 text-slate-800 focus:outline-none"
+                    className="form-input w-full"
                     placeholder="e.g. John"
                   />
                 ) : (
                   <input
                     value={firstNameAdmin}
                     onChange={(e) => setFirstNameAdmin(e.target.value)}
-                    className="w-full border border-slate-300 rounded-md px-3 py-2 text-slate-800 focus:outline-none"
+                    className="form-input w-full"
                     placeholder="e.g. John"
                   />
                 )}
@@ -482,14 +489,14 @@ const CreateUserForm = ({ onClose, refreshUsers, advisorContext }) => {
                   <input
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
-                    className="w-full border border-slate-300 rounded-md px-3 py-2 text-slate-800 focus:outline-none"
+                    className="form-input w-full"
                     placeholder="e.g. Doe"
                   />
                 ) : (
                   <input
                     value={lastNameAdmin}
                     onChange={(e) => setLastNameAdmin(e.target.value)}
-                    className="w-full border border-slate-300 rounded-md px-3 py-2 text-slate-800 focus:outline-none"
+                    className="form-input w-full"
                     placeholder="e.g. Doe"
                   />
                 )}
@@ -501,7 +508,7 @@ const CreateUserForm = ({ onClose, refreshUsers, advisorContext }) => {
                   <select
                     value={gender}
                     onChange={(e) => setGender(e.target.value)}
-                    className="w-full border border-slate-300 rounded-md px-3 py-2 text-slate-800 focus:outline-none"
+                    className="form-input w-full"
                   >
                     <option value="Male">Male</option>
                     <option value="Female">Female</option>
@@ -511,7 +518,7 @@ const CreateUserForm = ({ onClose, refreshUsers, advisorContext }) => {
                   <select
                     value={genderAdmin}
                     onChange={(e) => setGenderAdmin(e.target.value)}
-                    className="w-full border border-slate-300 rounded-md px-3 py-2 text-slate-800 focus:outline-none"
+                    className="form-input w-full"
                   >
                     <option value="Male">Male</option>
                     <option value="Female">Female</option>
@@ -549,6 +556,13 @@ const CreateUserForm = ({ onClose, refreshUsers, advisorContext }) => {
                   </button>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* Form-level validation error (replaces alert()) */}
+          {formError && (
+            <div className="col-span-2 text-xs text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
+              ⚠ {formError}
             </div>
           )}
 
