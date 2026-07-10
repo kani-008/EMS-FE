@@ -172,7 +172,10 @@ const AdminProfile = ({ embedded = false }) => {
       {user?.must_change_password && (
         <div className="bg-amber-50 border border-amber-200 text-amber-800 p-4 rounded-xl">
           <h4 className="font-semibold mb-1">Password Change Required</h4>
-          <p className="text-sm">Please change your default password using the form below to unlock access to the rest of the application.</p>
+          <p className="text-sm">
+            Please change your default password using the form below to unlock
+            access to the rest of the application.
+          </p>
         </div>
       )}
       {/* ── Identity card ──────────────────────────────────────────────────── */}
