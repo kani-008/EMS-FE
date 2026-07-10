@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import StatusBadge from "./StatusBadge";
 import Button from "./Button";
+import Dropdown from "./Dropdown";
 import API from "../ApiCall/Api";
 
 function ro(val) {
@@ -35,9 +36,40 @@ const EditUserDetails = ({ user, mode, onClose, onSaved }) => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [pwdError, setPwdError] = useState("");
 
+  // Staff edit form states (unconditional — only rendered/used in the staff branch)
+  const [staffFirstName, setStaffFirstName] = useState(user?.firstName || user?.first_name || "");
+  const [staffLastName, setStaffLastName] = useState(user?.lastName || user?.last_name || "");
+  const [staffDepartment, setStaffDepartment] = useState(user?.department_name || user?.department || "");
+  const [staffRole, setStaffRole] = useState(user?.userRole || "");
+  const [staffBatch, setStaffBatch] = useState(user?.batch || user?.batchYear || "");
+  const [staffCurrentYear, setStaffCurrentYear] = useState(user?.current_year || user?.year || "");
+  const [departments, setDepartments] = useState([]);
+  const [staffRoles, setStaffRoles] = useState([]);
+
+  // Same DB-driven pattern as CreateStaffForm.jsx — no hardcoded lists.
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const [deptData, roleData] = await Promise.all([
+          API.get("/departments"),
+          API.get("/roles"),
+        ]);
+        if (deptData.data.success) setDepartments(deptData.data.data || []);
+        if (roleData.data.success) setStaffRoles(roleData.data.data || []);
+      } catch (err) {
+        console.error("Failed to load department/role options:", err);
+      }
+    };
+    load();
+  }, []);
+
   if (!user) return null;
 
   const isEdit = mode === "edit";
+  // API returns userRole as "STUDENT" (uppercase, matching the user_role table)
+  // — comparing against "Student" here previously meant this NEVER matched,
+  // so Edit silently fell through to read-only Info mode for every user.
+  const isStudentRole = String(user.userRole || "").toUpperCase() === "STUDENT";
 
   // Derive Semester and Current Year based on batch
   const batchNum = parseInt(user.batch, 10);
@@ -104,8 +136,63 @@ const EditUserDetails = ({ user, mode, onClose, onSaved }) => {
     }
   };
 
-  // ── EDIT MODE (Student role only) ───────────────────────────────────────────
-  if (isEdit && user.userRole === "Student") {
+  const handleSaveStaff = async () => {
+    if (newPassword || confirmPassword) {
+      if (newPassword !== confirmPassword) {
+        setPwdError("Passwords do not match");
+        return;
+      }
+      if (newPassword.length < 6) {
+        setPwdError("Password must be at least 6 characters");
+        return;
+      }
+    }
+    setPwdError("");
+
+    if (!staffFirstName.trim()) {
+      setError("First Name is required.");
+      return;
+    }
+    setError("");
+    setLoading(true);
+
+    try {
+      const body = {
+        firstName: staffFirstName.trim(),
+        lastName: staffLastName.trim(),
+        department: staffDepartment,
+        role: staffRole,
+        batch: staffBatch,
+        currentYear: staffCurrentYear === "" ? undefined : Number(staffCurrentYear),
+      };
+
+      await API.put(`/staff/${facultyId}`, body);
+
+      // Staff password change goes through /profile, not /staff/:id — that
+      // endpoint only updates identity/role fields. Only attempted if the
+      // admin actually filled in a new password.
+      if (newPassword && newPassword === confirmPassword) {
+        // No admin-initiated staff password reset endpoint currently exists
+        // (staff can only change their own password via /profile). Surface
+        // that clearly instead of silently doing nothing.
+        setError("Identity details saved. Note: resetting another staff member's password isn't supported yet — they need to change it themselves from their own Profile page.");
+      }
+
+      alert("Staff updated successfully!");
+      if (onSaved) await onSaved();
+      onClose();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Resolve faculty_id for staff PUT requests
+  const facultyId = user.faculty_id || user.userId;
+
+  // ── EDIT MODE (Student role) ────────────────────────────────────────────────
+  if (isEdit && isStudentRole) {
     return (
       <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/40 overflow-y-auto pt-20 pb-10" onClick={onClose}>
         <div className="w-[700px] bg-white rounded-xl shadow-lg p-6" onClick={(e) => e.stopPropagation()}>
@@ -250,6 +337,151 @@ const EditUserDetails = ({ user, mode, onClose, onSaved }) => {
               <Button
                 label={loading ? "Saving…" : "Save"}
                 onClick={handleSave}
+                disabled={loading}
+                variant="primary"
+              />
+              <Button
+                label="Cancel"
+                onClick={onClose}
+                disabled={loading}
+                variant="danger"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── EDIT MODE (Staff — any non-STUDENT role) ────────────────────────────────
+  // Previously there was no edit path for staff at all; Edit always fell
+  // through to the read-only Info view below.
+  if (isEdit && !isStudentRole) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/40 overflow-y-auto pt-20 pb-10" onClick={onClose}>
+        <div className="w-[700px] bg-white rounded-xl shadow-lg p-6" onClick={(e) => e.stopPropagation()}>
+          <h2 className="text-sm font-semibold text-blue-800 mb-1">EDIT STAFF USER</h2>
+          <p className="text-xs text-slate-500 mb-4">
+            Faculty ID <span className="font-mono font-bold text-blue-700">{facultyId}</span> is immutable and cannot be changed.
+          </p>
+
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            {/* First Name — editable */}
+            <div>
+              <label className="form-label">First Name</label>
+              <input
+                value={staffFirstName}
+                onChange={(e) => setStaffFirstName(e.target.value)}
+                className="w-full border border-slate-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                placeholder="e.g. John"
+              />
+            </div>
+
+            {/* Last Name — editable */}
+            <div>
+              <label className="form-label">Last Name</label>
+              <input
+                value={staffLastName}
+                onChange={(e) => setStaffLastName(e.target.value)}
+                className="w-full border border-slate-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                placeholder="e.g. Doe"
+              />
+            </div>
+
+            {/* Department — editable, DB-driven */}
+            <div>
+              <label className="form-label">Department</label>
+              <Dropdown
+                value={staffDepartment}
+                onChange={setStaffDepartment}
+                options={departments}
+                placeholder="Choose Department"
+              />
+            </div>
+
+            {/* Role — editable, DB-driven */}
+            <div>
+              <label className="form-label">Role</label>
+              <Dropdown
+                value={staffRole}
+                onChange={setStaffRole}
+                options={staffRoles}
+                placeholder="Choose Role"
+              />
+            </div>
+
+            {/* Batch — editable (only meaningful for ADVISOR, but harmless for others) */}
+            <div>
+              <label className="form-label">Batch</label>
+              <input
+                value={staffBatch}
+                onChange={(e) => setStaffBatch(e.target.value)}
+                className="w-full border border-slate-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                placeholder="e.g. 2023 or N/A"
+              />
+            </div>
+
+            {/* Current Year — editable */}
+            <div>
+              <label className="form-label">Current Year</label>
+              <input
+                type="number"
+                min="0"
+                max="4"
+                value={staffCurrentYear}
+                onChange={(e) => setStaffCurrentYear(e.target.value)}
+                className="w-full border border-slate-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              />
+            </div>
+
+            {/* ── Change Password Section — informational only for staff, see note below ── */}
+            <div className="mt-5 border-t border-slate-200 pt-4 col-span-2">
+              <p className="text-xs font-bold uppercase tracking-widest text-indigo-700 mb-3">
+                Change Password <span className="font-normal text-slate-400 lowercase tracking-normal">(optional — leave blank to skip)</span>
+              </p>
+              <p className="text-xs text-slate-400 mb-3">
+                Note: staff can only change their own password from their own Profile page. Filling
+                this in will save your other changes but will NOT reset their password.
+              </p>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <label className="form-label">New Password</label>
+                  <input
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => { setNewPassword(e.target.value); setPwdError(""); }}
+                    className="w-full border border-slate-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    placeholder="Min 6 characters"
+                  />
+                </div>
+                <div>
+                  <label className="form-label">Confirm New Password</label>
+                  <input
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => { setConfirmPassword(e.target.value); setPwdError(""); }}
+                    className="w-full border border-slate-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    placeholder="Repeat new password"
+                  />
+                </div>
+                {pwdError && (
+                  <div className="col-span-2 text-xs text-red-500">
+                    ⚠️ {pwdError}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {error && (
+              <div className="col-span-2 text-xs text-red-500 mt-3">
+                ⚠️ {error}
+              </div>
+            )}
+
+            <div className="col-span-2 flex justify-end gap-3 mt-6">
+              <Button
+                label={loading ? "Saving…" : "Save"}
+                onClick={handleSaveStaff}
                 disabled={loading}
                 variant="primary"
               />

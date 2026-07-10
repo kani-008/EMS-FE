@@ -6,13 +6,6 @@ import API from "../../ApiCall/Api";
 import { useAuth } from "../../components/AuthContext";
 
 // ── Tiny helpers ────────────────────────────────────────────────────────────────
-const Field = ({ label, value, children }) => (
-  <div>
-    <p className="form-label">{label}</p>
-    {children ?? <p className="form-value">{value || "—"}</p>}
-  </div>
-);
-
 const Badge = ({ text, color = "blue" }) => {
   const colors = {
     blue: "bg-blue-100 text-blue-700",
@@ -78,6 +71,13 @@ const AdminProfile = ({ embedded = false }) => {
   const [savingPhone, setSavingPhone] = useState(false);
   const [phoneMsg, setPhoneMsg] = useState(null);
 
+  // ── Identity edit (firstName/lastName/gender) ───────────────────────────────
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [gender, setGender] = useState("");
+  const [savingIdentity, setSavingIdentity] = useState(false);
+  const [identityMsg, setIdentityMsg] = useState(null);
+
   // ── Password change ─────────────────────────────────────────────────────────
   const [currentPwd, setCurrentPwd] = useState("");
   const [newPwd, setNewPwd] = useState("");
@@ -93,6 +93,9 @@ const AdminProfile = ({ embedded = false }) => {
         const res = await API.get("/profile");
         setProfile(res.data.data);
         setPhone(res.data.data.phone || "");
+        setFirstName(res.data.data.firstName || "");
+        setLastName(res.data.data.lastName || "");
+        setGender(res.data.data.gender || "");
       } catch (err) {
         setFetchErr(err.message);
       } finally {
@@ -113,6 +116,27 @@ const AdminProfile = ({ embedded = false }) => {
       setPhoneMsg({ type: "error", text: err.message });
     } finally {
       setSavingPhone(false);
+    }
+  };
+
+  // ── Save identity fields ─────────────────────────────────────────────────────
+  const handleSaveIdentity = async () => {
+    setSavingIdentity(true);
+    setIdentityMsg(null);
+    try {
+      await API.put("/profile", { firstName, lastName, gender });
+      setProfile((p) => ({
+        ...p,
+        firstName,
+        lastName,
+        gender,
+        fullName: `${firstName} ${lastName}`.trim() || p.username,
+      }));
+      setIdentityMsg({ type: "ok", text: "Profile details updated." });
+    } catch (err) {
+      setIdentityMsg({ type: "error", text: err.message });
+    } finally {
+      setSavingIdentity(false);
     }
   };
 
@@ -205,10 +229,51 @@ const AdminProfile = ({ embedded = false }) => {
           Profile Details
         </p>
         <div className="grid grid-cols-2 gap-x-8 gap-y-5">
-          <Field label="First Name" value={profile.firstName} />
-          <Field label="Last Name" value={profile.lastName} />
-          <Field label="Gender" value={profile.gender} />
-          <Field label="Department" value={profile.department} />
+          <div>
+            <label className="form-label">First Name</label>
+            <input
+              id="admin-first-name-input"
+              type="text"
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              placeholder="e.g. Jane"
+              className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-400"
+            />
+          </div>
+          <div>
+            <label className="form-label">Last Name</label>
+            <input
+              id="admin-last-name-input"
+              type="text"
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              placeholder="e.g. Doe"
+              className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-400"
+            />
+          </div>
+          <div>
+            <label className="form-label">Gender</label>
+            <select
+              id="admin-gender-input"
+              value={gender}
+              onChange={(e) => setGender(e.target.value)}
+              className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-400"
+            >
+              <option value="">Select</option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+            </select>
+          </div>
+        </div>
+        <div className="mt-3">
+          <Button
+            id="admin-save-identity-btn"
+            onClick={handleSaveIdentity}
+            disabled={savingIdentity}
+            variant="primary"
+            label={savingIdentity ? "Saving…" : "Save"}
+          />
+          <Msg msg={identityMsg} />
         </div>
 
         <Divider />
