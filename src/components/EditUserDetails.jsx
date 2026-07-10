@@ -71,20 +71,34 @@ const EditUserDetails = ({ user, mode, onClose, onSaved }) => {
   // so Edit silently fell through to read-only Info mode for every user.
   const isStudentRole = String(user.userRole || "").toUpperCase() === "STUDENT";
 
-  // Derive Semester and Current Year based on batch
-  const batchNum = parseInt(user.batch, 10);
-  const currentYear = new Date().getFullYear();
-  const currentMonth = new Date().getMonth() + 1;
+  const [derivedCurrentYear, setDerivedCurrentYear] = useState(null);
+  const [derivedSemester, setDerivedSemester] = useState(null);
 
-  const derivedCurrentYear = !isNaN(batchNum)
-    ? currentYear - batchNum + 1
-    : null;
-
-  const derivedSemester = !isNaN(batchNum)
-    ? (currentMonth >= 7
-      ? ((currentYear - batchNum) * 2) + 1
-      : ((currentYear - batchNum) * 2))
-    : null;
+  useEffect(() => {
+    const fetchDerivation = async () => {
+      const batchVal = user?.batch;
+      const courseVal = course || user?.course;
+      if (batchVal && courseVal && batchVal !== "N/A") {
+        try {
+          const res = await API.get("/staff/validate-batch", {
+            params: { batch: batchVal, course: courseVal }
+          });
+          if (res.data.valid) {
+            setDerivedCurrentYear(res.data.currentYear);
+            setDerivedSemester(res.data.semester);
+          } else {
+            setDerivedCurrentYear(null);
+            setDerivedSemester(null);
+          }
+        } catch (err) {
+          console.error("Failed to derive year/semester from backend:", err);
+          setDerivedCurrentYear(null);
+          setDerivedSemester(null);
+        }
+      }
+    };
+    fetchDerivation();
+  }, [user?.batch, course, user?.course]);
 
   // Resolve roll_no for the request
   const rollNo = user.userId || user.roll_no;

@@ -389,7 +389,7 @@ const CreateStaffForm = ({ onClose, refreshUsers }) => {
             Temporary password will be auto-generated as: <strong>&lt;generated_username&gt;7311</strong>
             {isAdvisor && (
               <span className="block mt-1 text-blue-600 font-medium">
-                Excel template columns: first_name, last_name, gender, department, role, course, batch, current_year
+                Excel template columns: first_name, last_name, gender, department, role, course, batch
               </span>
             )}
           </div>

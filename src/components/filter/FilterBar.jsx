@@ -1,9 +1,10 @@
 // frontend/src/components/filter/FilterBar.jsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import DateTimeDropdown from "../DateTimeDropdown";
 import CheckboxDropdown from "./CheckboxDropdown";
 import { useAuth } from "../../components/AuthContext";
 import assets from "../../../src/assets/assets";
+import API from "../../ApiCall/Api";
 
 const getDefaultToDate = () => new Date();
 
@@ -38,17 +39,42 @@ const FilterBar = ({
   const [toDate, setToDate] = useState(getDefaultToDate);
   const [actionOpen, setActionOpen] = useState(false);
 
+  const [dbOptions, setDbOptions] = useState({
+    courses: ["B.E", "M.E"],
+    years: ["1", "2", "3", "4"],
+    semesters: ["1", "2", "3", "4", "5", "6", "7", "8"],
+    statuses: ["Active", "Inactive"],
+    roles: ["Student", "Staff"]
+  });
+
+  useEffect(() => {
+    if (type === "user" || type === "request") {
+      const fetchOptions = async () => {
+        try {
+          const res = await API.get("/users/filter-options");
+          if (res.data.success && res.data.data) {
+            setDbOptions(res.data.data);
+          }
+        } catch (err) {
+          console.error("Failed to load filter options from server:", err);
+        }
+      };
+      fetchOptions();
+    }
+  }, [type]);
+
   const semesterOptions = (() => {
-    if (isAdmin) return ["1", "2"];
+    const list = dbOptions.semesters || ["1", "2", "3", "4", "5", "6", "7", "8"];
+    if (isAdmin) return list.filter(s => s === "1" || s === "2");
     const selectedYears = filters.year || [];
     if (selectedYears.length === 1) {
       const yr = selectedYears[0];
-      if (yr === "1") return ["1", "2"];
-      if (yr === "2") return ["3", "4"];
-      if (yr === "3") return ["5", "6"];
-      if (yr === "4") return ["7", "8"];
+      if (yr === "1") return list.filter(s => s === "1" || s === "2");
+      if (yr === "2") return list.filter(s => s === "3" || s === "4");
+      if (yr === "3") return list.filter(s => s === "5" || s === "6");
+      if (yr === "4") return list.filter(s => s === "7" || s === "8");
     }
-    return ["1", "2", "3", "4", "5", "6", "7", "8"];
+    return list;
   })();
 
   return (
@@ -65,7 +91,7 @@ const FilterBar = ({
               {isAdmin && (
                 <CheckboxDropdown
                   label="User Role"
-                  options={["Student", "Staff"]}
+                  options={dbOptions.roles}
                   value={filters.role || []}
                   onChange={(v) => setFilters({ ...filters, role: v })}
                 />
@@ -73,14 +99,14 @@ const FilterBar = ({
 
               <CheckboxDropdown
                 label="Course"
-                options={["B.E", "M.E"]}
+                options={dbOptions.courses}
                 value={filters.course || []}
                 onChange={(v) => setFilters({ ...filters, course: v })}
               />
 
               <CheckboxDropdown
                 label="Year"
-                options={["1", "2", "3", "4"]}
+                options={dbOptions.years}
                 value={filters.year || []}
                 onChange={(newYears) => {
                   if (isAdmin) {
@@ -123,7 +149,7 @@ const FilterBar = ({
 
               <CheckboxDropdown
                 label="Status"
-                options={["Active", "Inactive"]}
+                options={dbOptions.statuses}
                 value={filters.status || []}
                 onChange={(v) => setFilters({ ...filters, status: v })}
               />
@@ -137,14 +163,14 @@ const FilterBar = ({
                 <>
                   <CheckboxDropdown
                     label="Course"
-                    options={["B.E", "M.E"]}
+                    options={dbOptions.courses}
                     value={filters.course || []}
                     onChange={(v) => setFilters({ ...filters, course: v })}
                   />
 
                   <CheckboxDropdown
                     label="Year"
-                    options={["1", "2", "3", "4"]}
+                    options={dbOptions.years}
                     value={filters.year || []}
                     onChange={(v) => setFilters({ ...filters, year: v })}
                   />
@@ -193,7 +219,7 @@ const FilterBar = ({
 
               {actionOpen && (
                 <div className="absolute right-0 mt-3 w-max bg-white border rounded-md shadow-lg z-50">
-                  {isAdmin && type === "user" && (
+                  {(isAdmin || isStaff) && type === "user" && (
                     <>
                       <button
                         onClick={() => {

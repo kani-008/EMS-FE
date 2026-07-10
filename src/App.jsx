@@ -33,7 +33,10 @@ const App = () => {
         <Route path="/staff" element={<Layout />}>
           <Route index element={<Dashboard />} />
           <Route path="requests" element={<RequestManagement />} />
-          <Route path="users" element={<UserManagement />} />
+          {/* Gate the users route to ADVISOR only */}
+          <Route element={<ProtectedRoute roles={["ADVISOR"]} />}>
+            <Route path="users" element={<UserManagement />} />
+          </Route>
           <Route path="settings" element={<Settings />} />
           <Route path="reports" element={<Reports />} />
           <Route path="profile" element={<Profile />} />

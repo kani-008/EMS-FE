@@ -7,15 +7,12 @@ import Modal from "../components/Modal";
 import UserFilterBar from "../components/filter/FilterBar";
 import PaginationMini from "../components/PaginationMini";
 import PageTitleRow from "../components/PageTitleRow";
-import ActionMenu from "../components/ActionMenu";
-import CreateUserForm from "../components/CreateUserForm";
 import CreateStaffForm from "../components/CreateStaffForm";
 import UserDetailsModalAdmin from "../components/UserDetailsModal";
 import EditUserDetailsStaff from "../components/EditUserDetails";
 import { useAuth } from "../components/AuthContext";
 import { useToast } from "../components/Toast";
 import { adminUserColumns, staffUserColumns } from "../components/UserManagement/columns";
-import { filterUsers } from "../components/UserManagement/filtersLogic";
 import API from "../ApiCall/Api";
 
 // Helper functions for Admin
@@ -65,21 +62,55 @@ const UserManagement = () => {
   const [selectedIds, setSelectedIds] = useState([]);
   const [users, setUsers] = useState([]);
   const [fetchError, setFetchError] = useState("");
+  const [stats, setStats] = useState({ total: 0, active: 0, inactive: 0 });
 
   const pageSize = 6;
 
+  // ──────────────── COMMON BULK ACTION METHODS ────────────────
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [bulkActionType, setBulkActionType] = useState(null);
+
+  const handleBulkStatusChange = async () => {
+    try {
+      const targetStatus = bulkActionType === "Activate" ? "ACTIVE" : "INACTIVE";
+      const res = await API.patch("/users/status", {
+        userIds: selectedIds,
+        status: targetStatus,
+      });
+      if (res.data.success) {
+        toast.success("Successfully updated status for selected users.");
+        setSelectedIds([]);
+        if (isAdmin) {
+          fetchUsersAdmin(filters);
+        } else {
+          fetchUsersStaff(filters);
+        }
+      } else {
+        toast.error("Failed to update status: " + res.data.message);
+      }
+    } catch (err) {
+      toast.error("Failed to update status: " + (err.response?.data?.message || err.message));
+    } finally {
+      setConfirmOpen(false);
+      setBulkActionType(null);
+    }
+  };
+
   // ──────────────── ADMIN STATE & METHODS ────────────────
-  const [confirmOpenAdmin, setConfirmOpenAdmin] = useState(false);
-  const [bulkActionTypeAdmin, setBulkActionTypeAdmin] = useState(null);
-  const [openCreateAdmin, setOpenCreateAdmin] = useState(null); // null | "students" | "staff" | "select"
+  const [openCreateAdmin, setOpenCreateAdmin] = useState(null); // null | "staff"
   const [modalModeAdmin, setModalModeAdmin] = useState(null); // "edit" | "info"
   const [selectedUserAdmin, setSelectedUserAdmin] = useState(null);
 
-  const fetchUsersAdmin = async () => {
+  const fetchUsersAdmin = async (currentFilters) => {
     setFetchError("");
     try {
-      const res = await API.get("/users");
+      const res = await API.get("/users", { params: currentFilters });
       if (res.data.success) {
+        setStats({
+          total: res.data.total ?? 0,
+          active: res.data.active ?? 0,
+          inactive: res.data.inactive ?? 0
+        });
         const formatted = (res.data.data || []).map((u) => {
           const roleVal = normalizeRole(
             u.userRole ?? u.role ?? u.user_role ?? u.user_role_name
@@ -157,11 +188,16 @@ const UserManagement = () => {
     }
   };
 
-  const fetchUsersStaff = async () => {
+  const fetchUsersStaff = async (currentFilters) => {
     setFetchError("");
     try {
-      const res = await API.get("/students");
+      const res = await API.get("/students", { params: currentFilters });
       if (res.data.success && res.data.data) {
+        setStats({
+          total: res.data.total ?? 0,
+          active: res.data.active ?? 0,
+          inactive: res.data.inactive ?? 0
+        });
         const formatted = res.data.data.map((u) => ({
           userId:          u.roll_no || "-",
           userName:        u.full_name || `${u.first_name || ""} ${u.last_name || ""}`.trim() || u.user_name,
@@ -186,37 +222,30 @@ const UserManagement = () => {
     }
   };
 
-  // ──────────────── MOUNT FETCHING ────────────────
-  /* eslint-disable react-hooks/set-state-in-effect */
+  // ──────────────── MOUNT & DEPENDENCY FETCHING ────────────────
   useEffect(() => {
-    if (isAdmin) {
-      fetchUsersAdmin();
-    } else {
+    if (!isAdmin) {
       fetchAdvisorContextStaff();
-      fetchUsersStaff();
     }
   }, [isAdmin]);
-  /* eslint-enable react-hooks/set-state-in-effect */
+
+  useEffect(() => {
+    if (isAdmin) {
+      fetchUsersAdmin(filters);
+    } else {
+      fetchUsersStaff(filters);
+    }
+    setPage("1");
+  }, [isAdmin, filters]);
 
   // ──────────────── FILTERING & PAGINATION ────────────────
   const uniqueBatchesStaff = [...new Set(users.map((u) => u.batch))].filter(Boolean).sort();
   
-  const filteredData = filterUsers(users, filters).filter((u) => {
-    if (!isAdmin && filters.batch?.length && !filters.batch.includes(u.batch)) {
-      return false;
-    }
-    return true;
-  });
+  const filteredData = users; // Server-side filtered
 
-  const totalUsers = filteredData.length;
-  const activeUsers = filteredData.filter((u) => {
-    const s = String(u.status || "").toUpperCase();
-    return s === "ACTIVE";
-  }).length;
-  const inactiveUsers = filteredData.filter((u) => {
-    const s = String(u.status || "").toUpperCase();
-    return s === "INACTIVE" || s === "UNVERIFIED";
-  }).length;
+  const totalUsers = stats.total;
+  const activeUsers = stats.active;
+  const inactiveUsers = stats.inactive;
 
   const totalPages = Math.ceil(filteredData.length / pageSize);
 
@@ -236,15 +265,9 @@ const UserManagement = () => {
 
   // ──────────────── ACTIONS MENU ────────────────
   const actions = (row, index) => {
-    const isRowActive = String(row.status || "").toUpperCase() === "ACTIVE";
     const items = [
       { id: "edit", label: "Edit", icon: assets.edit_icon },
       { id: "info", label: "Info", icon: assets.info_icon },
-      {
-        id: "status-toggle",
-        label: isRowActive ? "Deactivate" : "Reactivate",
-        icon: isRowActive ? assets.decline_icon : assets.accept_icon,
-      },
     ];
 
     return (
@@ -253,56 +276,32 @@ const UserManagement = () => {
         isLast={index === paginatedData.length - 1}
         isSecondLast={index === paginatedData.length - 2}
         onAction={async (action) => {
-          if (action.id === "status-toggle") {
-            const targetStatus = isRowActive ? "INACTIVE" : "ACTIVE";
-            const actionName = isRowActive ? "deactivate" : "reactivate";
-            if (window.confirm(`Are you sure you want to ${actionName} this user?`)) {
-              try {
-                const isStudent = String(row.userRole || "").toUpperCase() === "STUDENT";
-                const path = isStudent ? `/students/${row.userId}/status` : `/staff/${row.userId}/status`;
-                const res = await API.patch(path, { status: targetStatus });
-                if (res.data.success) {
-                  toast.success(`User successfully ${actionName}d.`);
-                  if (isAdmin) {
-                    fetchUsersAdmin();
-                  } else {
-                    fetchUsersStaff();
-                  }
-                } else {
-                  toast.error("Failed to change status: " + res.data.message);
-                }
-              } catch (err) {
-                toast.error("Failed to change status: " + (err.response?.data?.message || err.message));
-              }
-            }
+          if (isAdmin) {
+            setSelectedUserAdmin(row);
+            setModalModeAdmin(action.id);
           } else {
-            if (isAdmin) {
-              setSelectedUserAdmin(row);
-              setModalModeAdmin(action.id);
-            } else {
-              const mappedUser = {
-                userId: row.userId,
-                userName: row.userName,
-                first_name: row.firstName,
-                last_name: row.lastName,
-                firstName: row.firstName,
-                lastName: row.lastName,
-                gender: row.gender,
-                course: row.course,
-                department: row.department,
-                department_name: row.department,
-                current_year: row.year,
-                registration_no: row.registrationNo,
-                registrationNo: row.registrationNo,
-                batch: row.batch,
-                semester: row.semester,
-                status: row.status,
-                userRole: row.userRole,
-                timestamp: row.timestamp,
-              };
-              setSelectedUserStaff(mappedUser);
-              setModalModeStaff(action.id);
-            }
+            const mappedUser = {
+              userId: row.userId,
+              userName: row.userName,
+              first_name: row.firstName,
+              last_name: row.lastName,
+              firstName: row.firstName,
+              lastName: row.lastName,
+              gender: row.gender,
+              course: row.course,
+              department: row.department,
+              department_name: row.department,
+              current_year: row.year,
+              registration_no: row.registrationNo,
+              registrationNo: row.registrationNo,
+              batch: row.batch,
+              semester: row.semester,
+              status: row.status,
+              userRole: row.userRole,
+              timestamp: row.timestamp,
+            };
+            setSelectedUserStaff(mappedUser);
+            setModalModeStaff(action.id);
           }
         }}
       />
@@ -333,7 +332,7 @@ const UserManagement = () => {
         )}
         <PageTitleRow
           title="User Management"
-          onCreate={() => setOpenCreateAdmin("select")}
+          onCreate={() => setOpenCreateAdmin("staff")}
           stats={[
             { value: String(totalUsers).padStart(2, "0"), label: "Total User", color: "blue" },
             { value: String(activeUsers).padStart(2, "0"), label: "Active", color: "green" },
@@ -341,50 +340,11 @@ const UserManagement = () => {
           ]}
         />
 
-        {/* CREATE TYPE SELECTION MODAL */}
-        {openCreateAdmin === "select" && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-            <div className="w-[500px] bg-white rounded-xl shadow-lg p-6">
-              <h2 className="text-lg font-semibold text-blue-800 mb-6">
-                What would you like to create?
-              </h2>
-              <div className="flex gap-4">
-                <button
-                  onClick={() => setOpenCreateAdmin("students")}
-                  className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-medium"
-                >
-                  Create Student Users
-                </button>
-                <button
-                  onClick={() => setOpenCreateAdmin("staff")}
-                  className="flex-1 px-4 py-3 bg-green-600 text-white rounded-md hover:bg-green-700 font-medium"
-                >
-                  Create Staff Users
-                </button>
-              </div>
-              <Button
-                onClick={() => setOpenCreateAdmin(null)}
-                variant="ghost"
-                label="Cancel"
-                className="w-full mt-3"
-              />
-            </div>
-          </div>
-        )}
-
-        {/* CREATE STUDENT USERS */}
-        {openCreateAdmin === "students" && (
-          <CreateUserForm
-            onClose={() => setOpenCreateAdmin(null)}
-            refreshUsers={fetchUsersAdmin}
-          />
-        )}
-
         {/* CREATE STAFF USERS */}
         {openCreateAdmin === "staff" && (
           <CreateStaffForm
             onClose={() => setOpenCreateAdmin(null)}
-            refreshUsers={fetchUsersAdmin}
+            refreshUsers={() => fetchUsersAdmin(filters)}
           />
         )}
 
@@ -394,7 +354,7 @@ const UserManagement = () => {
             user={selectedUserAdmin}
             mode={modalModeAdmin}
             onClose={() => setModalModeAdmin(null)}
-            onSaved={fetchUsersAdmin}
+            onSaved={() => fetchUsersAdmin(filters)}
           />
         )}
 
@@ -412,8 +372,8 @@ const UserManagement = () => {
               setFilters={setFilters}
               selectedIds={selectedIds}
               onBulkAction={(type) => {
-                setBulkActionTypeAdmin(type);
-                setConfirmOpenAdmin(true);
+                setBulkActionType(type);
+                setConfirmOpen(true);
               }}
               onReset={() => {
                 setFilters({});
@@ -442,26 +402,12 @@ const UserManagement = () => {
 
         {/* CONFIRM MODAL */}
         <Modal
-          isOpen={confirmOpenAdmin}
+          isOpen={confirmOpen}
           title="Confirmation"
-          onClose={() => setConfirmOpenAdmin(false)}
-          onConfirm={() => {
-            setUsers((prev) =>
-              prev.map((userObj) =>
-                selectedIds.includes(userObj.userId)
-                  ? {
-                      ...userObj,
-                      status: bulkActionTypeAdmin === "Activate" ? "ACTIVE" : "INACTIVE",
-                    }
-                  : userObj
-              )
-            );
-            setConfirmOpenAdmin(false);
-            setSelectedIds([]);
-            setBulkActionTypeAdmin(null);
-          }}
+          onClose={() => setConfirmOpen(false)}
+          onConfirm={handleBulkStatusChange}
         >
-          Do you want to {bulkActionTypeAdmin?.toLowerCase()} the selected users?
+          Do you want to {bulkActionType?.toLowerCase()} the selected users?
         </Modal>
       </div>
     );
@@ -489,7 +435,7 @@ const UserManagement = () => {
       {openCreateStaff && (
         <CreateUserForm
           onClose={() => setOpenCreateStaff(false)}
-          refreshUsers={fetchUsersStaff}
+          refreshUsers={() => fetchUsersStaff(filters)}
           advisorContext={contextStaff}
         />
       )}
@@ -500,7 +446,7 @@ const UserManagement = () => {
           user={selectedUserStaff}
           mode={modalModeStaff}
           onClose={() => setModalModeStaff(null)}
-          onSaved={fetchUsersStaff}
+          onSaved={() => fetchUsersStaff(filters)}
         />
       )}
 
@@ -517,7 +463,10 @@ const UserManagement = () => {
             filters={filters}
             setFilters={setFilters}
             selectedIds={selectedIds}
-            onBulkAction={() => {}}
+            onBulkAction={(type) => {
+              setBulkActionType(type);
+              setConfirmOpen(true);
+            }}
             batches={uniqueBatchesStaff}
             onReset={() => {
               setFilters({});
@@ -545,6 +494,16 @@ const UserManagement = () => {
           />
         </>
       )}
+
+      {/* CONFIRM MODAL */}
+      <Modal
+        isOpen={confirmOpen}
+        title="Confirmation"
+        onClose={() => setConfirmOpen(false)}
+        onConfirm={handleBulkStatusChange}
+      >
+        Do you want to {bulkActionType?.toLowerCase()} the selected users?
+      </Modal>
     </div>
   );
 };
