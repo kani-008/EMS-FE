@@ -47,8 +47,8 @@ function EditStaffModal({ user, onClose, onSaved }) {
 
   useEffect(() => {
     Promise.all([
-      API.get("/admin/departments"),
-      API.get("/admin/staff-roles"),
+      API.get("/departments"),
+      API.get("/roles"),
     ]).then(([dd, rd]) => {
       if (dd.data.success) setDepartments(dd.data.data || []);
       if (rd.data.success) setStaffRoles(rd.data.data || []);
@@ -62,7 +62,7 @@ function EditStaffModal({ user, onClose, onSaved }) {
 
     setLoading(true);
     try {
-      await API.put(`/api/admin/update-staff/${user.userId}`, {
+      await API.put(`/staff/${user.userId}`, {
         firstName: firstName.trim(),
         lastName: lastName.trim(),
         department,

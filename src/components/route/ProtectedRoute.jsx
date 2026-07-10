@@ -1,4 +1,4 @@
-import { Navigate, Outlet } from "react-router-dom";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../AuthContext";
 
 // Derive the user's correct home path from their role
@@ -16,6 +16,7 @@ function getHomePath(role) {
  */
 const ProtectedRoute = ({ roles, redirectTo = "/login" }) => {
   const { user, loading } = useAuth();
+  const location = useLocation();
 
   if (loading) {
     return (
@@ -27,6 +28,22 @@ const ProtectedRoute = ({ roles, redirectTo = "/login" }) => {
 
   // Not logged in → go to login
   if (!user) return <Navigate to={redirectTo} replace />;
+
+  // Force password change check (BUG 3)
+  const profilePath = `${getHomePath(user.role)}/profile`;
+  const cleanPath = location.pathname.toLowerCase().replace(/\/$/, "");
+  const isCurrentlyOnProfile = cleanPath.endsWith("/profile");
+  console.log("🔎 ProtectedRoute check:", {
+    must_change_password: user.must_change_password,
+    pathname: location.pathname,
+    cleanPath,
+    isCurrentlyOnProfile,
+    profilePath
+  });
+  if (user.must_change_password && !isCurrentlyOnProfile) {
+    console.warn("Forcing password change redirect to: ", profilePath);
+    return <Navigate to={profilePath} replace />;
+  }
 
   // Authenticated but wrong role → redirect to their own portal
   if (roles && !roles.includes(user.role)) {

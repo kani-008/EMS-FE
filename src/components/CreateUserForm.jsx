@@ -63,7 +63,7 @@ const CreateUserForm = ({ onClose, refreshUsers, advisorContext }) => {
     try {
       setUploading(true);
       setUploadResult(null);
-      const res = await API.post("/staff/students/excel", formData, { headers: { "Content-Type": "multipart/form-data" } });
+      const res = await API.post("/students/excel", formData, { headers: { "Content-Type": "multipart/form-data" } });
       const data = res.data;
       setUploadResult(data);
       await refreshUsers();
@@ -180,7 +180,7 @@ const CreateUserForm = ({ onClose, refreshUsers, advisorContext }) => {
           return;
         }
         try {
-          const res = await API.post("/staff/students/range", {
+          const res = await API.post("/students/range", {
             prefix: prefixStaff.trim(),
             range_from: parseInt(rangeFromStaff, 10),
             range_to: parseInt(rangeToStaff, 10),
@@ -203,7 +203,7 @@ const CreateUserForm = ({ onClose, refreshUsers, advisorContext }) => {
           return;
         }
         try {
-          await API.post("/staff/students/single", {
+          await API.post("/students/single", {
             roll_no: rollNo.trim(),
             first_name: firstName.trim(),
             last_name: lastName.trim(),
@@ -246,7 +246,7 @@ const CreateUserForm = ({ onClose, refreshUsers, advisorContext }) => {
           batch: String(batchYear),
         };
 
-        const res = await API.post("/admin/create-users", payload);
+        const res = await API.post("/students", payload);
         const data = res.data;
         alert(`\u2705 ${data.totalCreated} users created successfully`);
         await refreshUsers();

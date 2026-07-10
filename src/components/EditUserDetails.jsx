@@ -92,7 +92,7 @@ const EditUserDetails = ({ user, mode, onClose, onSaved }) => {
         body.newPassword = newPassword;
       }
 
-      await API.put(`/api/staff/students/${rollNo}`, body);
+      await API.put(`/students/${rollNo}`, body);
 
       alert("Student updated successfully!");
       if (onSaved) await onSaved();

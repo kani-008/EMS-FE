@@ -56,11 +56,13 @@ const UserManagement = () => {
   const { user } = useAuth();
   const role = user?.role;
   const isAdmin = role === "ADMIN";
+  const isAdvisor = role === "ADVISOR";
 
   const [filters, setFilters] = useState({});
   const [page, setPage] = useState("1");
   const [selectedIds, setSelectedIds] = useState([]);
   const [users, setUsers] = useState([]);
+  const [fetchError, setFetchError] = useState("");
 
   const pageSize = 6;
 
@@ -72,8 +74,9 @@ const UserManagement = () => {
   const [selectedUserAdmin, setSelectedUserAdmin] = useState(null);
 
   const fetchUsersAdmin = async () => {
+    setFetchError("");
     try {
-      const res = await API.get("/admin/users");
+      const res = await API.get("/users");
       if (res.data.success) {
         const formatted = (res.data.data || []).map((u) => {
           const roleVal = normalizeRole(
@@ -122,6 +125,7 @@ const UserManagement = () => {
       }
     } catch (err) {
       console.error("Fetch users admin error:", err);
+      setFetchError(err.response?.data?.message || err.message || "Failed to load data");
     }
   };
 
@@ -139,6 +143,7 @@ const UserManagement = () => {
   const [selectedUserStaff, setSelectedUserStaff] = useState(null);
 
   const fetchAdvisorContextStaff = async () => {
+    setFetchError("");
     try {
       const res = await API.get("/staff/advisor-context");
       if (res.data.success && res.data.data) {
@@ -146,12 +151,14 @@ const UserManagement = () => {
       }
     } catch (err) {
       console.error("Fetch advisor context error:", err);
+      setFetchError(err.response?.data?.message || err.message || "Failed to load advisor context");
     }
   };
 
   const fetchUsersStaff = async () => {
+    setFetchError("");
     try {
-      const res = await API.get("/staff/students");
+      const res = await API.get("/students");
       if (res.data.success && res.data.data) {
         const formatted = res.data.data.map((u) => ({
           userId:          u.roll_no || "-",
@@ -173,6 +180,7 @@ const UserManagement = () => {
       }
     } catch (err) {
       console.error("Fetch students staff error:", err);
+      setFetchError(err.response?.data?.message || err.message || "Failed to load students");
     }
   };
 
@@ -268,10 +276,27 @@ const UserManagement = () => {
   );
 
   // ──────────────── RENDERING ────────────────
+  // Guard access to only Admin and Advisor (BUG 2)
+  if (!isAdmin && !isAdvisor) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center p-6">
+        <h2 className="text-2xl font-bold text-slate-800 mb-2">Access Restricted</h2>
+        <p className="text-slate-600 max-w-md">
+          This page is only accessible to Academic Advisors and Administrators.
+        </p>
+      </div>
+    );
+  }
+
   if (isAdmin) {
     // ──────────────── ADMIN USER MANAGEMENT LAYOUT ────────────────
     return (
       <div className="space-y-2">
+        {fetchError && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md text-sm">
+            {fetchError}
+          </div>
+        )}
         <PageTitleRow
           title="User Management"
           onCreate={() => setOpenCreateAdmin("select")}
@@ -411,6 +436,11 @@ const UserManagement = () => {
   // ──────────────── STAFF USER MANAGEMENT LAYOUT ────────────────
   return (
     <div className="space-y-2">
+      {fetchError && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md text-sm">
+          {fetchError}
+        </div>
+      )}
       <PageTitleRow
         title="User Management"
         onCreate={() => setOpenCreateStaff(true)}

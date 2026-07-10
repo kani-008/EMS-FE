@@ -1,7 +1,9 @@
 // frontend/src/student/pages/Profile/StudentProfile.jsx
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import Button from "../../components/Button";
 import API from "../../ApiCall/Api";
+import { useAuth } from "../../components/AuthContext";
 
 
 // ── Tiny helpers ────────────────────────────────────────────────────────────────
@@ -58,6 +60,8 @@ const ORDINAL = ["1st", "2nd", "3rd", "4th"];
 // Student can edit: first_name, last_name, registration_no, gender.
 // ═══════════════════════════════════════════════════════════════════════════════
 const StudentProfile = () => {
+  const { user, updateUser } = useAuth();
+  const navigate = useNavigate();
   const [profile, setProfile]   = useState(null);
   const [loading, setLoading]   = useState(true);
   const [fetchErr, setFetchErr] = useState("");
@@ -82,7 +86,7 @@ const StudentProfile = () => {
     (async () => {
       try {
         setLoading(true);
-        const res = await API.get("/student/profile");
+        const res = await API.get("/profile");
         setProfile(res.data.data);
         setFirstName(res.data.data.firstName || "");
         setLastName(res.data.data.lastName || "");
@@ -101,7 +105,7 @@ const StudentProfile = () => {
     setSavingProfile(true);
     setProfileMsg(null);
     try {
-      await API.put("/student/profile", {
+      await API.put("/profile", {
         first_name:      firstName,
         last_name:       lastName,
         registration_no: registrationNo,
@@ -136,11 +140,15 @@ const StudentProfile = () => {
     }
     setSavingPwd(true);
     try {
-      await API.put("/student/profile/password", { currentPassword: currentPwd, newPassword: newPwd, confirmPassword: confirmPwd });
+      await API.put("/profile/password", { currentPassword: currentPwd, newPassword: newPwd, confirmPassword: confirmPwd });
       setPwdMsg({ type: "ok", text: "Password changed successfully." });
+      updateUser({ must_change_password: false });
       setCurrentPwd("");
       setNewPwd("");
       setConfirmPwd("");
+      setTimeout(() => {
+        navigate("/student");
+      }, 1500);
     } catch (err) {
       setPwdMsg({ type: "error", text: err.message });
     } finally {
@@ -174,6 +182,13 @@ const StudentProfile = () => {
 
         {/* Page title */}
         <h1 className="text-xl font-bold text-slate-800 tracking-tight">My Profile</h1>
+
+        {user?.must_change_password && (
+          <div className="bg-amber-50 border border-amber-200 text-amber-800 p-4 rounded-xl">
+            <h4 className="font-semibold mb-1">Password Change Required</h4>
+            <p className="text-sm">Please change your default password using the form below to unlock access to the rest of the application.</p>
+          </div>
+        )}
 
         {/* ── Identity card ───────────────────────────────────────────────── */}
         <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">

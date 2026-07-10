@@ -31,8 +31,8 @@ const CreateStaffForm = ({ onClose, refreshUsers }) => {
     const load = async () => {
       try {
         const [deptData, roleData] = await Promise.all([
-          API.get("/admin/departments"),
-          API.get("/admin/staff-roles"),
+          API.get("/departments"),
+          API.get("/roles"),
         ]);
         if (deptData.data.success) setDepartments(deptData.data.data || []);
         if (roleData.data.success) setStaffRoles(roleData.data.data || []);
@@ -57,7 +57,7 @@ const CreateStaffForm = ({ onClose, refreshUsers }) => {
 
     setBatchChecking(true);
     try {
-      const res = await API.get("/admin/validate-batch", { params: { batch: batchVal, course: courseVal } });
+      const res = await API.get("/staff/validate-batch", { params: { batch: batchVal, course: courseVal } });
       const data = res.data;
 
       if (data.valid) {
@@ -143,7 +143,7 @@ const CreateStaffForm = ({ onClose, refreshUsers }) => {
 
     try {
       setLoading(true);
-      const res = await API.post("/admin/create-staff", payload);
+      const res = await API.post("/staff", payload);
       const data = res.data;
 
       const generatedUsername = data.username || "unknown";
@@ -177,7 +177,7 @@ const CreateStaffForm = ({ onClose, refreshUsers }) => {
     try {
       setUploading(true);
       setUploadResult(null);
-      const res = await API.post("/admin/upload-staff-excel", formData, { headers: { "Content-Type": "multipart/form-data" } });
+      const res = await API.post("/staff/bulk", formData, { headers: { "Content-Type": "multipart/form-data" } });
       const data = res.data;
       setUploadResult(data);
       await refreshUsers();

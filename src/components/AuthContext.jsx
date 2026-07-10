@@ -31,8 +31,12 @@ export const AuthProvider = ({ children }) => {
   // Set user directly from login response — no extra /api/auth/me round-trip
   const login = (userData) => setUser(userData);
 
+  const updateUser = (data) => {
+    setUser((prev) => (prev ? { ...prev, ...data } : null));
+  };
+
   return (
-    <AuthContext.Provider value={{ user, login, logout, loading }}>
+    <AuthContext.Provider value={{ user, login, logout, loading, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

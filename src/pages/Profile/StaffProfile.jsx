@@ -1,7 +1,9 @@
 // frontend/src/staff/pages/Profile/StaffProfile.jsx
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import Button from "../../components/Button";
 import API from "../../ApiCall/Api";
+import { useAuth } from "../../components/AuthContext";
 
 
 // ── Tiny helpers ────────────────────────────────────────────────────────────────
@@ -57,6 +59,8 @@ const Msg = ({ msg }) => {
 // Admin-set fields are read-only.
 // ═══════════════════════════════════════════════════════════════════════════════
 const StaffProfile = () => {
+  const { user, updateUser } = useAuth();
+  const navigate = useNavigate();
   const [profile, setProfile]   = useState(null);
   const [loading, setLoading]   = useState(true);
   const [fetchErr, setFetchErr] = useState("");
@@ -78,7 +82,7 @@ const StaffProfile = () => {
     (async () => {
       try {
         setLoading(true);
-        const res = await API.get("/staff/profile");
+        const res = await API.get("/profile");
         setProfile(res.data.data);
         setPhone(res.data.data.phone || "");
       } catch (err) {
@@ -94,7 +98,7 @@ const StaffProfile = () => {
     setSavingPhone(true);
     setPhoneMsg(null);
     try {
-      await API.put("/staff/profile", { phone });
+      await API.put("/profile", { phone });
       setProfile((p) => ({ ...p, phone }));
       setPhoneMsg({ type: "ok", text: "Contact number updated." });
     } catch (err) {
@@ -117,11 +121,15 @@ const StaffProfile = () => {
     }
     setSavingPwd(true);
     try {
-      await API.put("/staff/profile", { currentPassword: currentPwd, newPassword: newPwd, confirmPassword: confirmPwd });
+      await API.put("/profile", { currentPassword: currentPwd, newPassword: newPwd, confirmPassword: confirmPwd });
       setPwdMsg({ type: "ok", text: "Password changed successfully." });
+      updateUser({ must_change_password: false });
       setCurrentPwd("");
       setNewPwd("");
       setConfirmPwd("");
+      setTimeout(() => {
+        navigate("/staff");
+      }, 1500);
     } catch (err) {
       setPwdMsg({ type: "error", text: err.message });
     } finally {
@@ -154,6 +162,13 @@ const StaffProfile = () => {
 
         {/* Page title */}
         <h1 className="text-xl font-bold text-slate-800 tracking-tight">My Profile</h1>
+
+        {user?.must_change_password && (
+          <div className="bg-amber-50 border border-amber-200 text-amber-800 p-4 rounded-xl">
+            <h4 className="font-semibold mb-1">Password Change Required</h4>
+            <p className="text-sm">Please change your default password using the form below to unlock access to the rest of the application.</p>
+          </div>
+        )}
 
         {/* ── Identity card ───────────────────────────────────────────────── */}
         <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">

@@ -16,7 +16,10 @@ const NavBar = () => {
     configKey = "STAFF";
   }
 
-  const navItems = NAV_CONFIG[configKey] || [];
+  let navItems = NAV_CONFIG[configKey] || [];
+  if (configKey === "STAFF" && role !== "ADVISOR") {
+    navItems = navItems.filter((item) => item.to !== "/staff/users");
+  }
 
   return (
     <aside className="sidebar-blue">

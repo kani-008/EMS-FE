@@ -1,7 +1,9 @@
 // frontend/src/admin/pages/Profile/AdminProfile.jsx
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import Button from "../../components/Button";
 import API from "../../ApiCall/Api";
+import { useAuth } from "../../components/AuthContext";
 
 // ── Tiny helpers ────────────────────────────────────────────────────────────────
 const Field = ({ label, value, children }) => (
@@ -65,6 +67,8 @@ const Divider = () => <hr className="border-slate-200 my-5" />;
 //   embedded — when true (used inside Header drawer), omits page-level chrome.
 // ═══════════════════════════════════════════════════════════════════════════════
 const AdminProfile = ({ embedded = false }) => {
+  const { user, updateUser } = useAuth();
+  const navigate = useNavigate();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [fetchErr, setFetchErr] = useState("");
@@ -86,7 +90,7 @@ const AdminProfile = ({ embedded = false }) => {
     (async () => {
       try {
         setLoading(true);
-        const res = await API.get("/admin/profile");
+        const res = await API.get("/profile");
         setProfile(res.data.data);
         setPhone(res.data.data.phone || "");
       } catch (err) {
@@ -102,7 +106,7 @@ const AdminProfile = ({ embedded = false }) => {
     setSavingPhone(true);
     setPhoneMsg(null);
     try {
-      await API.put("/admin/profile", { phone });
+      await API.put("/profile", { phone });
       setProfile((p) => ({ ...p, phone }));
       setPhoneMsg({ type: "ok", text: "Contact number updated." });
     } catch (err) {
@@ -125,15 +129,19 @@ const AdminProfile = ({ embedded = false }) => {
     }
     setSavingPwd(true);
     try {
-      await API.put("/admin/profile", {
+      await API.put("/profile", {
         currentPassword: currentPwd,
         newPassword: newPwd,
         confirmPassword: confirmPwd,
       });
       setPwdMsg({ type: "ok", text: "Password changed successfully." });
+      updateUser({ must_change_password: false });
       setCurrentPwd("");
       setNewPwd("");
       setConfirmPwd("");
+      setTimeout(() => {
+        navigate("/admin");
+      }, 1500);
     } catch (err) {
       setPwdMsg({ type: "error", text: err.message });
     } finally {
@@ -159,17 +167,14 @@ const AdminProfile = ({ embedded = false }) => {
 
   const statusColor = profile.status === "ACTIVE" ? "green" : "red";
 
-  // ── Layout wrapper depending on embedded mode ──────────────────────────────
-  const Wrapper = embedded
-    ? ({ children }) => <div className="space-y-5">{children}</div>
-    : ({ children }) => (
-        <div className="min-h-screen bg-slate-50 p-6">
-          <div className="max-w-3xl mx-auto space-y-5">{children}</div>
+  const content = (
+    <>
+      {user?.must_change_password && (
+        <div className="bg-amber-50 border border-amber-200 text-amber-800 p-4 rounded-xl">
+          <h4 className="font-semibold mb-1">Password Change Required</h4>
+          <p className="text-sm">Please change your default password using the form below to unlock access to the rest of the application.</p>
         </div>
-      );
-
-  return (
-    <Wrapper>
+      )}
       {/* ── Identity card ──────────────────────────────────────────────────── */}
       <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
         <div className="flex items-center gap-5">
@@ -182,33 +187,32 @@ const AdminProfile = ({ embedded = false }) => {
             <p className="text-base font-bold text-slate-900 truncate">
               {profile.fullName || profile.username}
             </p>
-            <p className="text-xs text-slate-500 mt-0.5">@{profile.username}</p>
+            <p className="text-xs text-slate-500 mt-0.5">Administrator</p>
             <div className="flex flex-wrap gap-2 mt-2">
-              <Badge text={profile.role || "ADMIN"} color="blue" />
+              <Badge text="ADMIN" color="green" />
               <Badge text={profile.status || "ACTIVE"} color={statusColor} />
             </div>
           </div>
         </div>
       </div>
 
-      {/* ── Profile fields ─────────────────────────────────────────────────── */}
+      {/* ── Profile details ────────────────────────────────────────────────── */}
       <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
-        <p className="text-xs font-bold uppercase tracking-widest text-blue-700 mb-4">
+        <p className="text-xs font-bold uppercase tracking-widest text-indigo-700 mb-4">
           Profile Details
         </p>
-
         <div className="grid grid-cols-2 gap-x-8 gap-y-5">
           <Field label="First Name" value={profile.firstName} />
           <Field label="Last Name" value={profile.lastName} />
-          <Field label="Role">
-            <Badge text={profile.role || "—"} color="blue" />
-          </Field>
-          <Field label="Department" value={profile.department} />
           <Field label="Gender" value={profile.gender} />
+          <Field label="Department" value={profile.department} />
+        </div>
 
-          {/* Phone — editable */}
-          <div className="col-span-2">
-            <p className="form-label">Phone / Contact</p>
+        <Divider />
+
+        <div className="grid grid-cols-2 gap-x-8">
+          <div>
+            <label className="form-label">Contact Number</label>
             <div className="flex gap-2">
               <input
                 id="admin-phone-input"
@@ -284,7 +288,17 @@ const AdminProfile = ({ embedded = false }) => {
           <Msg msg={pwdMsg} />
         </div>
       </div>
-    </Wrapper>
+    </>
+  );
+
+  if (embedded) {
+    return <div className="space-y-5">{content}</div>;
+  }
+
+  return (
+    <div className="min-h-screen bg-slate-50 p-6">
+      <div className="max-w-3xl mx-auto space-y-5">{content}</div>
+    </div>
   );
 };
 
