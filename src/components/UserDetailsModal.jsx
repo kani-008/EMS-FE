@@ -7,6 +7,7 @@ import { useState, useEffect } from "react";
 import Button from "./Button";
 import API from "../ApiCall/Api";
 import { useToast } from "./Toast";
+import { getCachedData } from "../ApiCall/cache";
 
 function ro(val) {
   return String(val ?? "-").trim() || "-";
@@ -50,11 +51,11 @@ function EditStaffModal({ user, onClose, onSaved }) {
 
   useEffect(() => {
     Promise.all([
-      API.get("/departments"),
-      API.get("/roles"),
+      getCachedData("departments", "/departments"),
+      getCachedData("roles", "/roles"),
     ]).then(([dd, rd]) => {
-      if (dd.data.success) setDepartments(dd.data.data || []);
-      if (rd.data.success) setStaffRoles(rd.data.data || []);
+      setDepartments(dd || []);
+      setStaffRoles(rd || []);
     }).catch(() => { });
   }, []);
 

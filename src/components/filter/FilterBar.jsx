@@ -5,6 +5,7 @@ import CheckboxDropdown from "./CheckboxDropdown";
 import { useAuth } from "../../components/AuthContext";
 import assets from "../../../src/assets/assets";
 import API from "../../ApiCall/Api";
+import { getCachedData } from "../../ApiCall/cache";
 
 const getDefaultToDate = () => new Date();
 
@@ -51,9 +52,9 @@ const FilterBar = ({
     if (type === "user" || type === "request") {
       const fetchOptions = async () => {
         try {
-          const res = await API.get("/users/filter-options");
-          if (res.data.success && res.data.data) {
-            setDbOptions(res.data.data);
+          const data = await getCachedData("filterOptions", "/users/filter-options");
+          if (data) {
+            setDbOptions(data);
           }
         } catch (err) {
           console.error("Failed to load filter options from server:", err);

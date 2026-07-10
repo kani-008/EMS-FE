@@ -21,7 +21,9 @@ export const injectLogout = (fn) => { _logout = fn; };
 API.interceptors.response.use(
   (res) => res,
   (err) => {
-    const isUnauthorized = err.response?.status === 401;
+    const code = err.response?.data?.code;
+    const isTokenIssue = !code || ["TOKEN_EXPIRED", "TOKEN_INVALID", "NO_TOKEN"].includes(code);
+    const isUnauthorized = err.response?.status === 401 && isTokenIssue;
     const isInactive = err.response?.status === 403 && err.response?.data?.message === "Account is inactive. Please contact admin.";
     if ((isUnauthorized || isInactive) && _logout) {
       _logout();

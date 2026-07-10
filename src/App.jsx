@@ -9,16 +9,13 @@ import Reports from "./pages/Reports";
 import Profile from "./pages/Profile";
 import ProtectedRoute from "./components/route/ProtectedRoute";
 import { STAFF_ROLES } from "./components/constants";
-
 const App = () => {
   return (
     <Routes>
       {/* Redirect root to /login */}
       <Route path="/" element={<Navigate to="/login" replace />} />
-
       {/* Single Unified Login Page */}
       <Route path="/login" element={<Login />} />
-
       {/* Student Portal */}
       <Route element={<ProtectedRoute roles={["STUDENT"]} />}>
         <Route path="/student" element={<Layout />}>
@@ -27,7 +24,6 @@ const App = () => {
           <Route path="profile" element={<Profile />} />
         </Route>
       </Route>
-
       {/* Staff Portal */}
       <Route element={<ProtectedRoute roles={STAFF_ROLES} />}>
         <Route path="/staff" element={<Layout />}>

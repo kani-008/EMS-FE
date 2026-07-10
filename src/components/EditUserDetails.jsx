@@ -4,6 +4,7 @@ import Button from "./Button";
 import Dropdown from "./Dropdown";
 import API from "../ApiCall/Api";
 import { useToast } from "./Toast";
+import { getCachedData } from "../ApiCall/cache";
 
 function ro(val) {
   return String(val ?? "-").trim() || "-";
@@ -50,12 +51,12 @@ const EditUserDetails = ({ user, mode, onClose, onSaved }) => {
   useEffect(() => {
     const load = async () => {
       try {
-        const [deptData, roleData] = await Promise.all([
-          API.get("/departments"),
-          API.get("/roles"),
+        const [deptList, roleList] = await Promise.all([
+          getCachedData("departments", "/departments"),
+          getCachedData("roles", "/roles"),
         ]);
-        if (deptData.data.success) setDepartments(deptData.data.data || []);
-        if (roleData.data.success) setStaffRoles(roleData.data.data || []);
+        setDepartments(deptList || []);
+        setStaffRoles(roleList || []);
       } catch (err) {
         console.error("Failed to load department/role options:", err);
       }

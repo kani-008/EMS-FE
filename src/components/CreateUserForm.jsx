@@ -4,6 +4,7 @@ import Button from "./Button";
 import Dropdown from "./Dropdown";
 import API from "../ApiCall/Api";
 import { useToast } from "./Toast";
+import { getCachedData } from "../ApiCall/cache";
 
 const getDeptPrefix = (deptName) => {
   const name = String(deptName || "").trim().toUpperCase();
@@ -60,10 +61,8 @@ const CreateUserForm = ({ onClose, refreshUsers, advisorContext }) => {
     if (!isStaffFlow) {
       const fetchDepts = async () => {
         try {
-          const res = await API.get("/departments");
-          if (res.data.success) {
-            setDepartments(res.data.data || []);
-          }
+          const data = await getCachedData("departments", "/departments");
+          setDepartments(data || []);
         } catch (err) {
           console.error("Error fetching departments:", err);
         }
