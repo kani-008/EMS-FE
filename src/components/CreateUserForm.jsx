@@ -1,6 +1,7 @@
 // frontend/src/components/CreateUserForm.jsx
 import { useState, useEffect, useRef } from "react";
 import Button from "./Button";
+import Dropdown from "./Dropdown";
 import API from "../ApiCall/Api";
 
 const getDeptPrefix = (deptName) => {
@@ -252,18 +253,12 @@ const CreateUserForm = ({ onClose, refreshUsers, advisorContext }) => {
                 className="w-full border border-slate-300 rounded-md px-3 py-2 bg-gray-100 text-slate-600 outline-none cursor-not-allowed"
               />
             ) : (
-              <select
+              <Dropdown
                 value={departmentAdmin}
-                onChange={(e) => setDepartmentAdmin(e.target.value)}
-                className="w-full border border-slate-300 rounded-md px-3 py-2 text-slate-800 focus:outline-none"
-              >
-                <option value="" disabled>Choose Department</option>
-                {departments.map((d) => (
-                  <option key={d.department_id} value={d.department_name}>
-                    {d.department_name}
-                  </option>
-                ))}
-              </select>
+                onChange={setDepartmentAdmin}
+                options={departments}
+                placeholder="Choose Department"
+              />
             )}
           </div>
 

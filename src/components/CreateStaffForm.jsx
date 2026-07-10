@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import Button from "./Button";
+import Dropdown from "./Dropdown";
 import API from "../ApiCall/Api";
 
 const CreateStaffForm = ({ onClose, refreshUsers }) => {
@@ -222,28 +223,22 @@ const CreateStaffForm = ({ onClose, refreshUsers }) => {
           {/* Department */}
           <div>
             <label className="form-label">Department</label>
-            <select
+            <Dropdown
               value={department}
-              onChange={(e) => setDepartment(e.target.value)}
-              className="w-full border border-slate-300 rounded-md px-3 py-2 text-slate-800 focus:outline-none"
-            >
-              <option value="" disabled>Choose Department</option>
-              {departments.map((d) => (
-                <option key={d.department_id} value={d.department_name}>
-                  {d.department_name}
-                </option>
-              ))}
-            </select>
+              onChange={setDepartment}
+              options={departments}
+              placeholder="Choose Department"
+            />
           </div>
 
           {/* Staff Role */}
           <div>
             <label className="form-label">Staff Role</label>
-            <select
+            <Dropdown
               value={staffRole}
-              onChange={(e) => {
-                setStaffRole(e.target.value);
-                if (e.target.value !== "ADVISOR") {
+              onChange={(newRole) => {
+                setStaffRole(newRole);
+                if (newRole !== "ADVISOR") {
                   setBatch("");
                   setCourse("");
                   setBatchValid(null);
@@ -251,15 +246,9 @@ const CreateStaffForm = ({ onClose, refreshUsers }) => {
                   setBatchError("");
                 }
               }}
-              className="w-full border border-slate-300 rounded-md px-3 py-2 text-slate-800 focus:outline-none"
-            >
-              <option value="" disabled>Choose Role</option>
-              {staffRoles.map((r) => (
-                <option key={r.user_role_id} value={r.user_role}>
-                  {r.user_role}
-                </option>
-              ))}
-            </select>
+              options={staffRoles}
+              placeholder="Choose Role"
+            />
           </div>
 
           {/* Course — advisor only */}
