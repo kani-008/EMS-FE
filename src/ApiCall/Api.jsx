@@ -17,17 +17,75 @@ const API = axios.create({
 let _logout = null;
 export const injectLogout = (fn) => { _logout = fn; };
 
+let isRefreshing = false;
+let failedQueue = [];
+
+const processQueue = (error, token = null) => {
+  failedQueue.forEach((prom) => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  failedQueue = [];
+};
+
 // ── Response interceptor — auto-logout on 401 ─────────────────────────────
 API.interceptors.response.use(
   (res) => res,
-  (err) => {
+  async (err) => {
+    const originalRequest = err.config;
     const code = err.response?.data?.code;
-    const isTokenIssue = !code || ["TOKEN_EXPIRED", "TOKEN_INVALID", "NO_TOKEN"].includes(code);
-    const isUnauthorized = err.response?.status === 401 && isTokenIssue;
     const isInactive = err.response?.status === 403 && err.response?.data?.message === "Account is inactive. Please contact admin.";
-    if ((isUnauthorized || isInactive) && _logout) {
+
+    if (isInactive && _logout) {
       _logout();
+      return Promise.reject(err);
     }
+
+    if (err.response?.status === 401) {
+      // If access token has expired, try refreshing it silently
+      if (code === "TOKEN_EXPIRED" && !originalRequest._retry) {
+        if (isRefreshing) {
+          return new Promise((resolve, reject) => {
+            failedQueue.push({ resolve, reject });
+          })
+            .then(() => {
+              return API(originalRequest);
+            })
+            .catch((queueErr) => {
+              return Promise.reject(queueErr);
+            });
+        }
+
+        originalRequest._retry = true;
+        isRefreshing = true;
+
+        try {
+          const refreshRes = await API.post("/auth/refresh-token");
+          if (refreshRes.data.success) {
+            processQueue(null);
+            isRefreshing = false;
+            return API(originalRequest);
+          }
+        } catch (refreshErr) {
+          processQueue(refreshErr, null);
+          isRefreshing = false;
+          if (_logout) {
+            _logout();
+          }
+          return Promise.reject(refreshErr);
+        }
+      } else {
+        // For other 401s (NO_TOKEN, TOKEN_INVALID or failed retry), trigger logout
+        const isTokenIssue = !code || ["TOKEN_EXPIRED", "TOKEN_INVALID", "NO_TOKEN"].includes(code);
+        if (isTokenIssue && _logout) {
+          _logout();
+        }
+      }
+    }
+
     return Promise.reject(err);
   }
 );

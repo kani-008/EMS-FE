@@ -1,6 +1,5 @@
 // frontend/src/pages/UserManagement.jsx
 import { useState, useEffect } from "react";
-import Button from "../components/Button";
 import assets from "../assets/assets";
 import Table from "../components/table/Table";
 import Modal from "../components/Modal";
@@ -9,6 +8,7 @@ import PaginationMini from "../components/PaginationMini";
 import PageTitleRow from "../components/PageTitleRow";
 import ActionMenu from "../components/ActionMenu";
 import CreateStaffForm from "../components/CreateStaffForm";
+import CreateUserForm from "../components/CreateUserForm";
 import UserDetailsModalAdmin from "../components/UserDetailsModal";
 import EditUserDetailsStaff from "../components/EditUserDetails";
 import { useAuth } from "../components/AuthContext";
