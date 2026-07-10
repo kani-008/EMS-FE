@@ -21,7 +21,9 @@ export const injectLogout = (fn) => { _logout = fn; };
 API.interceptors.response.use(
   (res) => res,
   (err) => {
-    if (err.response?.status === 401 && _logout) {
+    const isUnauthorized = err.response?.status === 401;
+    const isInactive = err.response?.status === 403 && err.response?.data?.message === "Account is inactive. Please contact admin.";
+    if ((isUnauthorized || isInactive) && _logout) {
       _logout();
     }
     return Promise.reject(err);

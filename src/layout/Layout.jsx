@@ -1,17 +1,16 @@
-// frontend/src/layout/Layout.jsx
 import Header from "./Header";
 import NavBar from "../components/NavBar";
 import { Outlet } from "react-router-dom";
 
 const Layout = () => {
   return (
-    <div className="app-container">
+    <div className="flex flex-col h-screen overflow-hidden bg-slate-50">
       <Header />
-      <div className="main-content">
+      <div className="flex flex-1 pt-[68px] overflow-hidden">
         <NavBar />
-        <div className="page-container">
+        <main className="flex-1 p-6 overflow-y-auto bg-slate-50">
           <Outlet />
-        </div>
+        </main>
       </div>
     </div>
   );

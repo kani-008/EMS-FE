@@ -4,28 +4,35 @@ import { useAuth } from "../components/AuthContext";
 import API from "../ApiCall/Api";
 
 // Roles that access the staff portal
-const STAFF_ROLES = ["ADVISOR", "HOD", "PRINCIPAL", "FACULTY", "PLACEMENT", "SPORTS"];
+const STAFF_ROLES = [
+  "ADVISOR",
+  "HOD",
+  "PRINCIPAL",
+  "FACULTY",
+  "PLACEMENT",
+  "SPORTS",
+];
 
 function getRoleRedirect(role) {
   if (role === "STUDENT") return "/student";
-  if (role === "ADMIN")   return "/admin";
+  if (role === "ADMIN") return "/admin";
   if (STAFF_ROLES.includes(role)) return "/staff";
   return null; // UNKNOWN role
 }
 
 // Navbar / sidebar colour — read from .sidebar-blue { background: #147cdd } in global.css
-const BRAND   = "#147cdd";
+const BRAND = "#147cdd";
 const BRAND_D = "#0f6ec2"; // hover / loading shade
 
 const Login = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
 
-  const [username, setUsername]       = useState("");
-  const [password, setPassword]       = useState("");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError]             = useState("");
-  const [loading, setLoading]         = useState(false);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
     if (!username || !password) {
@@ -58,30 +65,46 @@ const Login = () => {
       }
     } catch (err) {
       console.error("[Login] Error:", err.response?.data || err.message || err);
-      setError(err.response?.data?.message || err.message || "Login failed. Please try again.");
+      setError(
+        err.response?.data?.message ||
+          err.message ||
+          "Login failed. Please try again.",
+      );
     } finally {
       setLoading(false);
     }
   };
 
-  const handleKeyDown = (e) => { if (e.key === "Enter") handleLogin(); };
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter") handleLogin();
+  };
 
   return (
     <div
       className="min-h-screen flex items-center justify-center px-4 py-10"
-      style={{ background: BRAND, fontFamily: "'Inter', 'Segoe UI', system-ui, sans-serif" }}
+      style={{
+        background: BRAND,
+        fontFamily: "'Inter', 'Segoe UI', system-ui, sans-serif",
+      }}
     >
       {/* ── WHITE CARD ──────────────────────────────────────────────────────── */}
       <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl p-8">
-
         {/* 1. Icon */}
         <div className="flex justify-center mb-4">
           <div
             className="flex items-center justify-center w-14 h-14 rounded-2xl shadow-lg"
             style={{ background: BRAND }}
           >
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none"
-              stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg
+              width="28"
+              height="28"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="white"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
               <path d="M9 11l3 3L22 4" />
               <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
             </svg>
@@ -101,8 +124,16 @@ const Login = () => {
         {/* 4. Error message */}
         {error && (
           <div className="mb-5 px-4 py-3 rounded-lg bg-red-50 border border-red-200 flex items-start gap-2">
-            <svg className="flex-shrink-0 mt-0.5" width="14" height="14" viewBox="0 0 24 24"
-              fill="none" stroke="#dc2626" strokeWidth="2.5" strokeLinecap="round">
+            <svg
+              className="flex-shrink-0 mt-0.5"
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#dc2626"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+            >
               <circle cx="12" cy="12" r="10" />
               <line x1="12" y1="8" x2="12" y2="12" />
               <line x1="12" y1="16" x2="12.01" y2="16" />
@@ -153,14 +184,28 @@ const Login = () => {
               className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
             >
               {showPassword ? (
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-                  stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                >
                   <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
                   <circle cx="12" cy="12" r="3" />
                 </svg>
               ) : (
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-                  stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                >
                   <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94" />
                   <path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19" />
                   <line x1="1" y1="1" x2="23" y2="23" />
@@ -178,56 +223,38 @@ const Login = () => {
           className="w-full py-3 rounded-lg font-semibold text-white text-sm tracking-wide
                      transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           style={{ background: loading ? `${BRAND}99` : BRAND }}
-          onMouseEnter={(e) => { if (!loading) e.currentTarget.style.background = BRAND_D; }}
-          onMouseLeave={(e) => { if (!loading) e.currentTarget.style.background = BRAND; }}
+          onMouseEnter={(e) => {
+            if (!loading) e.currentTarget.style.background = BRAND_D;
+          }}
+          onMouseLeave={(e) => {
+            if (!loading) e.currentTarget.style.background = BRAND;
+          }}
         >
           {loading ? (
             <span className="flex items-center justify-center gap-2">
-              <svg className="animate-spin" width="16" height="16" viewBox="0 0 24 24"
-                fill="none" stroke="white" strokeWidth="2.5">
-                <path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" strokeOpacity="0.25" />
+              <svg
+                className="animate-spin"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="white"
+                strokeWidth="2.5"
+              >
+                <path
+                  d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  strokeOpacity="0.25"
+                />
                 <path d="M21 12a9 9 0 00-9-9" />
               </svg>
               Signing in...
             </span>
-          ) : "Sign In"}
+          ) : (
+            "Sign In"
+          )}
         </button>
 
-        {/* 8. Demo Credentials */}
-        {/* ===== DEMO CREDENTIALS — comment out for production ===== */}
-        <div className="mt-6 px-4 py-4 rounded-xl border border-slate-200 bg-slate-50">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-3">
-            Demo Credentials
-          </p>
-          <div className="flex flex-col gap-2">
-            {[
-              { role: "Student",      user: "23cse01", pass: "23cse01@2023" },
-              { role: "Staff/Advisor", user: "vasuki",  pass: "vasuki123"    },
-              { role: "Admin",        user: "admin1",  pass: "admin123"      },
-            ].map(({ role, user, pass }) => (
-              <div key={role} className="flex items-center justify-between gap-2 text-xs">
-                <span className="text-slate-500 w-24 flex-shrink-0">{role}</span>
-                <div className="flex items-center gap-1">
-                  <span
-                    className="font-mono text-slate-700 cursor-pointer hover:text-blue-600 transition-colors"
-                    title="Click to fill username"
-                    onClick={() => setUsername(user)}
-                  >{user}</span>
-                  <span className="text-slate-300">·</span>
-                  <span
-                    className="font-mono text-slate-400 cursor-pointer hover:text-blue-600 transition-colors"
-                    title="Click to fill password"
-                    onClick={() => setPassword(pass)}
-                  >{pass}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-          <p className="text-[9px] text-slate-400 mt-3 text-center">Click any credential to auto-fill</p>
-        </div>
-        {/* ===== END DEMO CREDENTIALS ===== */}
-
-        {/* 9. Copyright */}
+        {/* 8. Copyright */}
         <p className="text-center text-[10px] text-slate-400 mt-6">
           © 2025 Event Tracking System. All rights reserved.
         </p>

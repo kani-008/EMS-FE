@@ -3,26 +3,25 @@ import { useState, useEffect } from "react";
 import Button from "../../components/Button";
 import API from "../../ApiCall/Api";
 
-
 // ── Tiny helpers ────────────────────────────────────────────────────────────────
 const Field = ({ label, value, children }) => (
   <div>
     <p className="form-label">{label}</p>
-    {children ?? (
-      <p className="form-value">{value || "—"}</p>
-    )}
+    {children ?? <p className="form-value">{value || "—"}</p>}
   </div>
 );
 
 const Badge = ({ text, color = "blue" }) => {
   const colors = {
-    blue:  "bg-blue-100 text-blue-700",
+    blue: "bg-blue-100 text-blue-700",
     green: "bg-emerald-100 text-emerald-700",
-    red:   "bg-red-100 text-red-600",
+    red: "bg-red-100 text-red-600",
     slate: "bg-slate-100 text-slate-600",
   };
   return (
-    <span className={`inline-block text-[11px] font-semibold px-2.5 py-0.5 rounded-full uppercase tracking-wide ${colors[color] || colors.slate}`}>
+    <span
+      className={`inline-block text-[11px] font-semibold px-2.5 py-0.5 rounded-full uppercase tracking-wide ${colors[color] || colors.slate}`}
+    >
       {text}
     </span>
   );
@@ -30,10 +29,14 @@ const Badge = ({ text, color = "blue" }) => {
 
 // ── Initials avatar ─────────────────────────────────────────────────────────────
 const InitialsAvatar = ({ firstName, lastName, size = "lg" }) => {
-  const initials = [firstName?.[0], lastName?.[0]].filter(Boolean).join("").toUpperCase() || "?";
+  const initials =
+    [firstName?.[0], lastName?.[0]].filter(Boolean).join("").toUpperCase() ||
+    "?";
   const dim = size === "lg" ? "w-20 h-20 text-2xl" : "w-12 h-12 text-base";
   return (
-    <div className={`${dim} rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white font-bold shadow-md select-none`}>
+    <div
+      className={`${dim} rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white font-bold shadow-md select-none`}
+    >
       {initials}
     </div>
   );
@@ -44,8 +47,11 @@ const Msg = ({ msg }) => {
   if (!msg) return null;
   const isErr = msg.type === "error";
   return (
-    <p className={`text-xs mt-2 font-medium ${isErr ? "text-red-500" : "text-emerald-600"}`}>
-      {isErr ? "✖ " : "✔ "}{msg.text}
+    <p
+      className={`text-xs mt-2 font-medium ${isErr ? "text-red-500" : "text-emerald-600"}`}
+    >
+      {isErr ? "✖ " : "✔ "}
+      {msg.text}
     </p>
   );
 };
@@ -59,21 +65,21 @@ const Divider = () => <hr className="border-slate-200 my-5" />;
 //   embedded — when true (used inside Header drawer), omits page-level chrome.
 // ═══════════════════════════════════════════════════════════════════════════════
 const AdminProfile = ({ embedded = false }) => {
-  const [profile, setProfile]   = useState(null);
-  const [loading, setLoading]   = useState(true);
+  const [profile, setProfile] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [fetchErr, setFetchErr] = useState("");
 
   // ── Phone edit ─────────────────────────────────────────────────────────────
-  const [phone, setPhone]       = useState("");
+  const [phone, setPhone] = useState("");
   const [savingPhone, setSavingPhone] = useState(false);
   const [phoneMsg, setPhoneMsg] = useState(null);
 
   // ── Password change ─────────────────────────────────────────────────────────
-  const [currentPwd, setCurrentPwd]   = useState("");
-  const [newPwd, setNewPwd]           = useState("");
-  const [confirmPwd, setConfirmPwd]   = useState("");
-  const [savingPwd, setSavingPwd]     = useState(false);
-  const [pwdMsg, setPwdMsg]           = useState(null);
+  const [currentPwd, setCurrentPwd] = useState("");
+  const [newPwd, setNewPwd] = useState("");
+  const [confirmPwd, setConfirmPwd] = useState("");
+  const [savingPwd, setSavingPwd] = useState(false);
+  const [pwdMsg, setPwdMsg] = useState(null);
 
   // ── Fetch profile on mount ─────────────────────────────────────────────────
   useEffect(() => {
@@ -119,7 +125,11 @@ const AdminProfile = ({ embedded = false }) => {
     }
     setSavingPwd(true);
     try {
-      await API.put("/admin/profile", { currentPassword: currentPwd, newPassword: newPwd, confirmPassword: confirmPwd });
+      await API.put("/admin/profile", {
+        currentPassword: currentPwd,
+        newPassword: newPwd,
+        confirmPassword: confirmPwd,
+      });
       setPwdMsg({ type: "ok", text: "Password changed successfully." });
       setCurrentPwd("");
       setNewPwd("");
@@ -163,7 +173,11 @@ const AdminProfile = ({ embedded = false }) => {
       {/* ── Identity card ──────────────────────────────────────────────────── */}
       <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
         <div className="flex items-center gap-5">
-          <InitialsAvatar firstName={profile.firstName} lastName={profile.lastName} size="lg" />
+          <InitialsAvatar
+            firstName={profile.firstName}
+            lastName={profile.lastName}
+            size="lg"
+          />
           <div className="flex-1 min-w-0">
             <p className="text-base font-bold text-slate-900 truncate">
               {profile.fullName || profile.username}
@@ -179,16 +193,18 @@ const AdminProfile = ({ embedded = false }) => {
 
       {/* ── Profile fields ─────────────────────────────────────────────────── */}
       <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
-        <p className="text-xs font-bold uppercase tracking-widest text-blue-700 mb-4">Profile Details</p>
+        <p className="text-xs font-bold uppercase tracking-widest text-blue-700 mb-4">
+          Profile Details
+        </p>
 
         <div className="grid grid-cols-2 gap-x-8 gap-y-5">
           <Field label="First Name" value={profile.firstName} />
-          <Field label="Last Name"  value={profile.lastName} />
+          <Field label="Last Name" value={profile.lastName} />
           <Field label="Role">
             <Badge text={profile.role || "—"} color="blue" />
           </Field>
           <Field label="Department" value={profile.department} />
-          <Field label="Gender"     value={profile.gender} />
+          <Field label="Gender" value={profile.gender} />
 
           {/* Phone — editable */}
           <div className="col-span-2">
@@ -209,7 +225,6 @@ const AdminProfile = ({ embedded = false }) => {
                 variant="primary"
                 label={savingPhone ? "Saving…" : "Save"}
               />
-
             </div>
             <Msg msg={phoneMsg} />
           </div>
@@ -218,13 +233,13 @@ const AdminProfile = ({ embedded = false }) => {
 
       {/* ── Change Password ─────────────────────────────────────────────────── */}
       <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
-        <p className="text-xs font-bold uppercase tracking-widest text-blue-700 mb-4">Change Password</p>
+        <p className="text-xs font-bold uppercase tracking-widest text-blue-700 mb-4">
+          Change Password
+        </p>
 
         <div className="space-y-3">
           <div>
-            <label className="form-label">
-              Current Password
-            </label>
+            <label className="form-label">Current Password</label>
             <input
               id="admin-current-pwd"
               type="password"
@@ -235,9 +250,7 @@ const AdminProfile = ({ embedded = false }) => {
             />
           </div>
           <div>
-            <label className="form-label">
-              New Password
-            </label>
+            <label className="form-label">New Password</label>
             <input
               id="admin-new-pwd"
               type="password"
@@ -248,9 +261,7 @@ const AdminProfile = ({ embedded = false }) => {
             />
           </div>
           <div>
-            <label className="form-label">
-              Confirm New Password
-            </label>
+            <label className="form-label">Confirm New Password</label>
             <input
               id="admin-confirm-pwd"
               type="password"
