@@ -8,7 +8,7 @@ const Layout = () => {
       <Header />
       <div className="flex flex-1 pt-16 overflow-hidden">
         <NavBar />
-        <main className="flex-1 px-6 pt-4 pb-6 overflow-y-auto bg-slate-50">
+        <main className="flex-1 px-6 pt-2 pb-6 overflow-y-auto bg-slate-50">
           <Outlet />
         </main>
       </div>

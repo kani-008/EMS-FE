@@ -129,7 +129,7 @@ const StatusConfig = () => {
       .then((res) => {
         if (res.data?.success) {
           setRows(
-            res.data.data.map((s, i) => ({
+            res.data.data.map((s) => ({
               id:    s.id,
               name:  s.status,
               color: DEFAULT_COLORS[s.status] ?? "#7F7F7F",

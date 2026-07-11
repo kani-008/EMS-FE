@@ -42,7 +42,7 @@ const CreateRequestModal = ({ onClose, onSuccess }) => {
         if (staffRes.status === "fulfilled" && staffRes.value.data?.success) {
           setStaffList(staffRes.value.data.data || []);
         }
-      } catch (_) {
+      } catch {
         // ignore — dropdowns will just be empty
       } finally {
         setTypesLoading(false);

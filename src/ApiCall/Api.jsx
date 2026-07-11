@@ -130,7 +130,7 @@ export const getCachedData = async (key, url) => {
   if (cachedStr) {
     try {
       cached = JSON.parse(cachedStr);
-    } catch (_) {
+    } catch {
       localStorage.removeItem(key);
     }
   }

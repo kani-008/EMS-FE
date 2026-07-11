@@ -91,7 +91,7 @@ const EditUserDetails = ({ user, mode, onClose, onSaved }) => {
       }
     };
     fetchDerivation();
-  }, [user?.batch, course, user?.course]);
+  }, [user, user?.batch, course, user?.course]);
 
   if (!user) return null;
 

@@ -11,7 +11,7 @@ const PageTitleRow = ({ title, onCreate, stats = [] }) => {
     <div
       className="
         flex items-center justify-between
-        py-3
+        py-2
         bg-white
         border-b border-slate-300
         -mx-6
