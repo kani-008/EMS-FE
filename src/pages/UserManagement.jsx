@@ -72,6 +72,31 @@ const UserManagement = () => {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [bulkActionType, setBulkActionType] = useState(null);
 
+  // ──────────────── DELETE (SOFT — SETS STATUS TO INACTIVE) ────────────────
+  const [deleteTarget, setDeleteTarget] = useState(null); // { userName, label }
+
+  const handleDeleteUser = async () => {
+    if (!deleteTarget) return;
+    try {
+      const res = await API.delete(`/users/${encodeURIComponent(deleteTarget.userName)}`);
+      if (res.data.success) {
+        toast.success(`${deleteTarget.label} deleted successfully.`);
+        setSelectedIds((prev) => prev.filter((id) => id !== deleteTarget.rowId));
+        if (isAdmin) {
+          fetchUsersAdmin(filters);
+        } else {
+          fetchUsersStaff(filters);
+        }
+      } else {
+        toast.error("Failed to delete user: " + res.data.message);
+      }
+    } catch (err) {
+      toast.error("Failed to delete user: " + (err.response?.data?.message || err.message));
+    } finally {
+      setDeleteTarget(null);
+    }
+  };
+
   const handleBulkStatusChange = async () => {
     try {
       const targetStatus = bulkActionType === "Activate" ? "ACTIVE" : "INACTIVE";
@@ -278,6 +303,7 @@ const UserManagement = () => {
     const items = [
       { id: "edit", label: "Edit", icon: assets.edit_icon },
       { id: "info", label: "Info", icon: assets.info_icon },
+      { id: "delete", label: "Delete", icon: assets.delete_icon },
     ];
 
     return (
@@ -286,6 +312,14 @@ const UserManagement = () => {
         isLast={index === paginatedData.length - 1}
         isSecondLast={index === paginatedData.length - 2}
         onAction={async (action) => {
+          if (action.id === "delete") {
+            // credentials.table_login is keyed by user_name for every role;
+            // admin rows carry it via the `...u` spread, staff/advisor rows
+            // key students by roll_no which IS the student's user_name.
+            const userName = row.user_name || row.userId;
+            setDeleteTarget({ userName, rowId: row.userId, label: row.fullName || row.userName || row.userId });
+            return;
+          }
           if (isAdmin) {
             setSelectedUserAdmin(row);
             setModalModeAdmin(action.id);
@@ -425,6 +459,16 @@ const UserManagement = () => {
         >
           Do you want to {bulkActionType?.toLowerCase()} the selected users?
         </Modal>
+
+        {/* DELETE CONFIRM MODAL */}
+        <Modal
+          isOpen={!!deleteTarget}
+          title="Delete User"
+          onClose={() => setDeleteTarget(null)}
+          onConfirm={handleDeleteUser}
+        >
+          Are you sure you want to delete <strong>{deleteTarget?.label}</strong>? This deactivates their account.
+        </Modal>
       </div>
     );
   }
@@ -525,6 +569,16 @@ const UserManagement = () => {
         onConfirm={handleBulkStatusChange}
       >
         Do you want to {bulkActionType?.toLowerCase()} the selected users?
+      </Modal>
+
+      {/* DELETE CONFIRM MODAL */}
+      <Modal
+        isOpen={!!deleteTarget}
+        title="Delete User"
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDeleteUser}
+      >
+        Are you sure you want to delete <strong>{deleteTarget?.label}</strong>? This deactivates their account.
       </Modal>
     </div>
   );

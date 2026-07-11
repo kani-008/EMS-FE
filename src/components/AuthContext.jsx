@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 import API, { injectLogout, refreshAccessToken } from "../ApiCall/Api";
 
 // ── Context ────────────────────────────────────────────────────────────────
@@ -12,13 +12,31 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Re-entrancy guard: /auth/logout itself 401s when there's no valid token,
+  // and that 401 flows back through the response interceptor into this same
+  // logout() — without this guard that's unbounded recursion (the interceptor
+  // calls _logout() again, which POSTs again, which 401s again, forever).
+  const loggingOutRef = useRef(false);
+
   const logout = () => {
+    if (loggingOutRef.current) return Promise.resolve();
+    loggingOutRef.current = true;
+
+    const clear = () => {
+      localStorage.removeItem(ACCESS_TOKEN_KEY);
+      setUser(null);
+      loggingOutRef.current = false;
+    };
+
+    // Nothing to invalidate server-side if we were never holding a token.
+    if (!localStorage.getItem(ACCESS_TOKEN_KEY)) {
+      clear();
+      return Promise.resolve();
+    }
+
     return API.post("/auth/logout")
       .catch((err) => console.error("Logout error:", err))
-      .finally(() => {
-        localStorage.removeItem(ACCESS_TOKEN_KEY);
-        setUser(null);
-      });
+      .finally(clear);
   };
 
   // Wire logout into the API interceptor so any 401 response auto-clears auth
