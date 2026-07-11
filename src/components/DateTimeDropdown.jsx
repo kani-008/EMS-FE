@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import assets from "../assets/assets";
+import Dropdown from "./Dropdown";
 
 const months = [
   "January","February","March","April","May","June",
@@ -103,25 +104,17 @@ const DateTimeDropdown = ({ label, value, onChange, align = "left" }) => {
 
           {/* MONTH / YEAR */}
           <div className="mb-3 flex gap-2">
-            <select
-              value={month}
-              onChange={(e) => setMonth(+e.target.value)}
-              className="rounded-md border px-2 py-1 text-sm"
-            >
-              {months.map((m, i) => (
-                <option key={m} value={i}>{m}</option>
-              ))}
-            </select>
+            <Dropdown
+              value={String(month)}
+              onChange={(v) => setMonth(+v)}
+              options={months.map((m, i) => ({ value: String(i), label: m }))}
+            />
 
-            <select
-              value={year}
-              onChange={(e) => setYear(+e.target.value)}
-              className="rounded-md border px-2 py-1 text-sm"
-            >
-              {years.map((y) => (
-                <option key={y} value={y}>{y}</option>
-              ))}
-            </select>
+            <Dropdown
+              value={String(year)}
+              onChange={(v) => setYear(+v)}
+              options={years.map((y) => ({ value: String(y), label: String(y) }))}
+            />
           </div>
 
           {/* WEEK */}
@@ -157,18 +150,29 @@ const DateTimeDropdown = ({ label, value, onChange, align = "left" }) => {
 
           {/* TIME */}
           <div className="mt-4 flex justify-center gap-2">
-            <select value={hour} onChange={(e) => setHour(+e.target.value)} className="border rounded px-2 py-1 text-sm">
-              {Array.from({ length: 12 }).map((_, i) => <option key={i}>{i + 1}</option>)}
-            </select>
+            <div className="w-16">
+              <Dropdown
+                value={String(hour)}
+                onChange={(v) => setHour(+v)}
+                options={Array.from({ length: 12 }, (_, i) => ({ value: String(i + 1), label: String(i + 1) }))}
+              />
+            </div>
 
-            <select value={minute} onChange={(e) => setMinute(+e.target.value)} className="border rounded px-2 py-1 text-sm">
-              {[0,15,30,45].map(m => <option key={m} value={m}>{String(m).padStart(2,"0")}</option>)}
-            </select>
+            <div className="w-16">
+              <Dropdown
+                value={String(minute)}
+                onChange={(v) => setMinute(+v)}
+                options={[0, 15, 30, 45].map((m) => ({ value: String(m), label: String(m).padStart(2, "0") }))}
+              />
+            </div>
 
-            <select value={ampm} onChange={(e) => setAmpm(e.target.value)} className="border rounded px-2 py-1 text-sm">
-              <option>AM</option>
-              <option>PM</option>
-            </select>
+            <div className="w-20">
+              <Dropdown
+                value={ampm}
+                onChange={setAmpm}
+                options={["AM", "PM"]}
+              />
+            </div>
           </div>
         </div>
       )}

@@ -1,9 +1,11 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useEffect, useState } from "react";
-import API, { injectLogout } from "../ApiCall/Api";
+import API, { injectLogout, refreshAccessToken } from "../ApiCall/Api";
 
 // ── Context ────────────────────────────────────────────────────────────────
 export const AuthContext = createContext(null);
+
+const ACCESS_TOKEN_KEY = "ems_access_token";
 
 // ── Provider ───────────────────────────────────────────────────────────────
 export const AuthProvider = ({ children }) => {
@@ -11,16 +13,10 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   const logout = () => {
-    const refreshToken = localStorage.getItem("ems_refresh_token");
-    const accessToken = localStorage.getItem("ems_access_token");
-    return API.post("/auth/logout", 
-      { refreshToken },
-      { headers: { Authorization: `Bearer ${accessToken}` } }
-    )
+    return API.post("/auth/logout")
       .catch((err) => console.error("Logout error:", err))
       .finally(() => {
-        localStorage.removeItem("ems_access_token");
-        localStorage.removeItem("ems_refresh_token");
+        localStorage.removeItem(ACCESS_TOKEN_KEY);
         setUser(null);
       });
   };
@@ -30,36 +26,80 @@ export const AuthProvider = ({ children }) => {
     injectLogout(logout);
   }, []);
 
+  // Restore session on load / refresh.
+  // The JWT lives in localStorage (shared across tabs of this origin) so a
+  // second tab picks it up immediately; the refresh token never touches JS —
+  // it's the httpOnly cookie, sent automatically by the browser.
   useEffect(() => {
-    // Restore session from localStorage refresh token on page load / refresh
-    const refreshToken = localStorage.getItem("ems_refresh_token");
-    if (!refreshToken) {
-      setUser(null);
-      setLoading(false);
-      return;
-    }
+    const bootstrap = async () => {
+      const accessToken = localStorage.getItem(ACCESS_TOKEN_KEY);
 
-    API.post("/auth/refresh-token", { refreshToken })
-      .then((res) => {
+      if (accessToken) {
+        try {
+          const res = await API.get("/auth/me");
+          if (res.data.success) {
+            setUser(res.data.user);
+          } else {
+            localStorage.removeItem(ACCESS_TOKEN_KEY);
+            setUser(null);
+          }
+        } catch {
+          // API response interceptor already attempts a silent refresh on
+          // TOKEN_EXPIRED; if we land here the token/cookie truly isn't valid.
+          localStorage.removeItem(ACCESS_TOKEN_KEY);
+          setUser(null);
+        } finally {
+          setLoading(false);
+        }
+        return;
+      }
+
+      // No cached access token — try a silent refresh via the httpOnly cookie
+      // alone before giving up and showing the login page.
+      try {
+        const res = await refreshAccessToken();
         if (res.data.success && res.data.accessToken) {
-          localStorage.setItem("ems_access_token", res.data.accessToken);
+          localStorage.setItem(ACCESS_TOKEN_KEY, res.data.accessToken);
           setUser(res.data.user);
         } else {
           setUser(null);
         }
-      })
-      .catch(() => {
-        localStorage.removeItem("ems_access_token");
-        localStorage.removeItem("ems_refresh_token");
+      } catch {
         setUser(null);
-      })
-      .finally(() => setLoading(false));
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    bootstrap();
   }, []);
 
-  // Set user and tokens directly from login response
-  const login = (userData, accessToken, refreshToken) => {
-    localStorage.setItem("ems_access_token", accessToken);
-    localStorage.setItem("ems_refresh_token", refreshToken);
+  // Cross-tab sync: another tab logging out (token cleared) logs this tab out
+  // too; another tab logging in (token written) hydrates this tab's user
+  // without a manual refresh.
+  useEffect(() => {
+    const onStorage = (e) => {
+      if (e.key !== ACCESS_TOKEN_KEY) return;
+
+      if (!e.newValue) {
+        setUser(null);
+        return;
+      }
+
+      API.get("/auth/me")
+        .then((res) => {
+          if (res.data.success) setUser(res.data.user);
+        })
+        .catch(() => {});
+    };
+
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
+
+  // Set user and token directly from login response
+  const login = (userData, accessToken) => {
+    localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
     setUser(userData);
   };
 

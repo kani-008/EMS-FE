@@ -20,6 +20,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Button from "../components/Button";
+import Dropdown from "../components/Dropdown";
 import API from "../ApiCall/Api";
 import { useAuth } from "../components/AuthContext";
 import { useToast } from "../components/Toast";
@@ -326,17 +327,13 @@ const Profile = () => {
                 </div>
                 <div>
                   <label className="form-label">Gender</label>
-                  <select
+                  <Dropdown
                     id="profile-gender"
                     value={gender}
-                    onChange={(e) => setGender(e.target.value)}
-                    className="form-input w-full"
-                  >
-                    <option value="">Select</option>
-                    <option value="Male">Male</option>
-                    <option value="Female">Female</option>
-                    {isStudent && <option value="Other">Other</option>}
-                  </select>
+                    onChange={setGender}
+                    options={isStudent ? ["Male", "Female", "Other"] : ["Male", "Female"]}
+                    placeholder="Select"
+                  />
                 </div>
 
                 {isStudent && (

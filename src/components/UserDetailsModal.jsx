@@ -5,6 +5,7 @@
 
 import { useState, useEffect } from "react";
 import Button from "./Button";
+import Dropdown from "./Dropdown";
 import API, { getCachedData } from "../ApiCall/Api";
 import { useToast } from "./Toast";
 
@@ -108,18 +109,12 @@ function EditStaffModal({ user, onClose, onSaved }) {
           {/* Role — editable dropdown */}
           <div>
             <label className="form-label">Role</label>
-            <select
+            <Dropdown
               value={role}
-              onChange={(e) => setRole(e.target.value)}
-              className="form-input w-full"
-            >
-              <option value="" disabled>Choose Role</option>
-              {staffRoles.map((r) => (
-                <option key={r.user_role_id} value={r.user_role}>
-                  {r.user_role}
-                </option>
-              ))}
-            </select>
+              onChange={setRole}
+              options={staffRoles}
+              placeholder="Choose Role"
+            />
           </div>
 
           {/* First Name */}
@@ -147,18 +142,12 @@ function EditStaffModal({ user, onClose, onSaved }) {
           {/* Department */}
           <div>
             <label className="form-label">Department</label>
-            <select
+            <Dropdown
               value={department}
-              onChange={(e) => setDepartment(e.target.value)}
-              className="form-input w-full"
-            >
-              <option value="" disabled>Choose Department</option>
-              {departments.map((d) => (
-                <option key={d.department_id} value={d.department_name}>
-                  {d.department_name}
-                </option>
-              ))}
-            </select>
+              onChange={setDepartment}
+              options={departments}
+              placeholder="Choose Department"
+            />
           </div>
 
           {/* Batch */}
@@ -183,17 +172,18 @@ function EditStaffModal({ user, onClose, onSaved }) {
           {/* Current Year (study year) — editable */}
           <div>
             <label className="form-label">Current Year</label>
-            <select
+            <Dropdown
               value={currentYear}
-              onChange={(e) => setCurrentYear(e.target.value)}
-              className="form-input w-full"
-            >
-              <option value="">— None —</option>
-              <option value="1">1</option>
-              <option value="2">2</option>
-              <option value="3">3</option>
-              <option value="4">4</option>
-            </select>
+              onChange={setCurrentYear}
+              options={[
+                { value: "", label: "— None —" },
+                { value: "1", label: "1" },
+                { value: "2", label: "2" },
+                { value: "3", label: "3" },
+                { value: "4", label: "4" },
+              ]}
+              placeholder="— None —"
+            />
           </div>
 
           {formError && (

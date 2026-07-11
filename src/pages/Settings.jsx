@@ -1,6 +1,7 @@
 // frontend/src/pages/Settings.jsx
 import { useState, useEffect } from "react";
 import API from "../ApiCall/Api.jsx";
+import Dropdown from "../components/Dropdown";
 
 /* ── Inline SVG icons ────────────────────────────────────────────────────── */
 
@@ -214,88 +215,83 @@ const StatusConfig = () => {
    CREATE CONFIG
 ══════════════════════════════════════════════════════════════════════════ */
 
-const CreateConfig = () => (
-  <div className="max-w-lg border-l-4 border-l-blue-600 pl-4 grid gap-4">
-    <div>
-      <label className="mb-1 block text-xs font-semibold text-slate-500 uppercase tracking-wider">
-        Allowed Roles
-      </label>
-      <select className="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200">
-        <option>Admin</option>
-        <option>Staff</option>
-        <option>All</option>
-      </select>
+const CreateConfig = () => {
+  const [allowedRoles, setAllowedRoles] = useState("Admin");
+  const [defaultStatus, setDefaultStatus] = useState("Pending");
+
+  return (
+    <div className="max-w-lg border-l-4 border-l-blue-600 pl-4 grid gap-4">
+      <div>
+        <label className="mb-1 block text-xs font-semibold text-slate-500 uppercase tracking-wider">
+          Allowed Roles
+        </label>
+        <Dropdown value={allowedRoles} onChange={setAllowedRoles} options={["Admin", "Staff", "All"]} />
+      </div>
+      <div>
+        <label className="mb-1 block text-xs font-semibold text-slate-500 uppercase tracking-wider">
+          Default Status
+        </label>
+        <Dropdown value={defaultStatus} onChange={setDefaultStatus} options={["Pending"]} />
+      </div>
     </div>
-    <div>
-      <label className="mb-1 block text-xs font-semibold text-slate-500 uppercase tracking-wider">
-        Default Status
-      </label>
-      <select className="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200">
-        <option>Pending</option>
-      </select>
-    </div>
-  </div>
-);
+  );
+};
 
 /* ══════════════════════════════════════════════════════════════════════════
    CANCEL CONFIG
 ══════════════════════════════════════════════════════════════════════════ */
 
-const CancelConfig = () => (
-  <div className="max-w-lg border-l-4 border-l-red-500 pl-4 grid gap-4">
-    <div>
-      <label className="mb-1 block text-xs font-semibold text-slate-500 uppercase tracking-wider">
-        Allowed Until
-      </label>
-      <select className="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200">
-        <option>Before Final</option>
-        <option>Always</option>
-      </select>
+const CancelConfig = () => {
+  const [allowedUntil, setAllowedUntil] = useState("Before Final");
+  const [cancelAction, setCancelAction] = useState("Change Status");
+
+  return (
+    <div className="max-w-lg border-l-4 border-l-red-500 pl-4 grid gap-4">
+      <div>
+        <label className="mb-1 block text-xs font-semibold text-slate-500 uppercase tracking-wider">
+          Allowed Until
+        </label>
+        <Dropdown value={allowedUntil} onChange={setAllowedUntil} options={["Before Final", "Always"]} />
+      </div>
+      <div>
+        <label className="mb-1 block text-xs font-semibold text-slate-500 uppercase tracking-wider">
+          Cancel Action
+        </label>
+        <Dropdown value={cancelAction} onChange={setCancelAction} options={["Change Status", "Exit Workflow"]} />
+      </div>
     </div>
-    <div>
-      <label className="mb-1 block text-xs font-semibold text-slate-500 uppercase tracking-wider">
-        Cancel Action
-      </label>
-      <select className="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200">
-        <option>Change Status</option>
-        <option>Exit Workflow</option>
-      </select>
-    </div>
-  </div>
-);
+  );
+};
 
 /* ══════════════════════════════════════════════════════════════════════════
    FORWARD CONFIG
 ══════════════════════════════════════════════════════════════════════════ */
 
-const ForwardConfig = () => (
-  <div className="max-w-lg border-l-4 border-l-orange-500 pl-4 grid gap-4">
-    <div>
-      <label className="mb-1 block text-xs font-semibold text-slate-500 uppercase tracking-wider">
-        Allowed Status
-      </label>
-      <select className="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200">
-        <option>Pending</option>
-        <option>Forwarded</option>
-      </select>
+const ForwardConfig = () => {
+  const [allowedStatus, setAllowedStatus] = useState("Pending");
+  const [allowedRole, setAllowedRole] = useState("Staff");
+  const [nextStatus, setNextStatus] = useState("Forwarded");
+
+  return (
+    <div className="max-w-lg border-l-4 border-l-orange-500 pl-4 grid gap-4">
+      <div>
+        <label className="mb-1 block text-xs font-semibold text-slate-500 uppercase tracking-wider">
+          Allowed Status
+        </label>
+        <Dropdown value={allowedStatus} onChange={setAllowedStatus} options={["Pending", "Forwarded"]} />
+      </div>
+      <div>
+        <label className="mb-1 block text-xs font-semibold text-slate-500 uppercase tracking-wider">
+          Allowed Role
+        </label>
+        <Dropdown value={allowedRole} onChange={setAllowedRole} options={["Staff", "Admin"]} />
+      </div>
+      <div>
+        <label className="mb-1 block text-xs font-semibold text-slate-500 uppercase tracking-wider">
+          Next Status
+        </label>
+        <Dropdown value={nextStatus} onChange={setNextStatus} options={["Forwarded", "Accepted"]} />
+      </div>
     </div>
-    <div>
-      <label className="mb-1 block text-xs font-semibold text-slate-500 uppercase tracking-wider">
-        Allowed Role
-      </label>
-      <select className="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200">
-        <option>Staff</option>
-        <option>Admin</option>
-      </select>
-    </div>
-    <div>
-      <label className="mb-1 block text-xs font-semibold text-slate-500 uppercase tracking-wider">
-        Next Status
-      </label>
-      <select className="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200">
-        <option>Forwarded</option>
-        <option>Accepted</option>
-      </select>
-    </div>
-  </div>
-);
+  );
+};

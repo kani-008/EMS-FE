@@ -15,9 +15,7 @@ const PageTitleRow = ({ title, onCreate, stats = [] }) => {
         bg-white
         border-b border-slate-300
         -mx-6
-        -mb-2
         drop-shadow-sm
-        
       "
     >
       <h2 className="pl-4 text-sm font-semibold text-slate-800">{title}</h2>

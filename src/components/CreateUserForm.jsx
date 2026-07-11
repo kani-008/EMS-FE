@@ -1,7 +1,5 @@
-// frontend/src/components/CreateUserForm.jsx
 import { useState, useEffect, useRef } from "react";
-import Button from "./Button";
-import Dropdown from "./Dropdown";
+import DynamicForm from "./DynamicForm";
 import API, { getCachedData } from "../ApiCall/Api";
 import { useToast } from "./Toast";
 
@@ -15,40 +13,27 @@ const CreateUserForm = ({ onClose, refreshUsers, advisorContext }) => {
   const toast = useToast();
   const isStaffFlow = !!advisorContext;
 
-  // ── Unified State ──
   const [departments, setDepartments] = useState([]);
-  const [departmentAdmin, setDepartmentAdmin] = useState("");
-  const [batchAdmin, setBatchAdmin] = useState("");
-  const [courseAdmin, setCourseAdmin] = useState("B.E");
-  const [semesterAdmin, setSemesterAdmin] = useState("");
 
-  const departmentStaff = advisorContext?.department_name || "";
-  const batchStaff = advisorContext?.batch || "";
-  const [courseStaff, setCourseStaff] = useState(advisorContext?.course || "B.E");
+  const [values, setValues] = useState({
+    department: advisorContext?.department_name || "",
+    batch: advisorContext?.batch || "",
+    course: advisorContext?.course || "B.E",
+    semester: "",
+    creationType: "Range",
+    prefix: "",
+    rollNo: "",
+    registrationNo: "",
+    firstName: "",
+    lastName: "",
+    gender: "Male",
+    rangeFrom: "",
+    rangeTo: "",
+  });
+  const setField = (name, value) => {
+    setValues((prev) => ({ ...prev, [name]: value }));
+  };
 
-  const [creationType, setCreationType] = useState("Range"); // "Range" | "Individual"
-
-  // Range specific state
-  const [prefixStaff, setPrefixStaff] = useState("");
-  const [prefixAdmin, setPrefixAdmin] = useState("");
-  const [rangeFromStaff, setRangeFromStaff] = useState("");
-  const [rangeToStaff, setRangeToStaff] = useState("");
-  const [rangeFromAdmin, setRangeFromAdmin] = useState("");
-  const [rangeToAdmin, setRangeToAdmin] = useState("");
-
-  // Individual specific state
-  const [rollNo, setRollNo] = useState("");
-  const [rollNoAdmin, setRollNoAdmin] = useState("");
-  const [registrationNo, setRegistrationNo] = useState("");
-  const [registrationNoAdmin, setRegistrationNoAdmin] = useState("");
-  const [firstName, setFirstName] = useState("");
-  const [firstNameAdmin, setFirstNameAdmin] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [lastNameAdmin, setLastNameAdmin] = useState("");
-  const [gender, setGender] = useState("Male");
-  const [genderAdmin, setGenderAdmin] = useState("Male");
-
-  // Common Form states
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadResult, setUploadResult] = useState(null);
@@ -73,25 +58,31 @@ const CreateUserForm = ({ onClose, refreshUsers, advisorContext }) => {
   // Derive Advisor prefix
   useEffect(() => {
     if (isStaffFlow && advisorContext) {
-      setCourseStaff(advisorContext.course || "B.E");
       const yrPart = String(advisorContext.batch || "").slice(-2);
       const deptPart = getDeptPrefix(advisorContext.department_name);
-      setPrefixStaff(`${yrPart}${deptPart}`);
+      setValues((prev) => ({
+        ...prev,
+        course: advisorContext.course || "B.E",
+        prefix: `${yrPart}${deptPart}`,
+      }));
     }
   }, [advisorContext, isStaffFlow]);
 
   // Derive Admin prefix
   useEffect(() => {
-    if (!isStaffFlow && batchAdmin && departmentAdmin) {
-      const yrPart = String(batchAdmin).slice(-2);
-      const deptPart = getDeptPrefix(departmentAdmin);
-      setPrefixAdmin(`${yrPart}${deptPart}`);
-    } else if (!isStaffFlow) {
-      setPrefixAdmin("");
+    if (!isStaffFlow) {
+      if (values.batch && values.department) {
+        const yrPart = String(values.batch).slice(-2);
+        const deptPart = getDeptPrefix(values.department);
+        setValues((prev) => ({ ...prev, prefix: `${yrPart}${deptPart}` }));
+      } else {
+        setValues((prev) => ({ ...prev, prefix: "" }));
+      }
     }
-  }, [batchAdmin, departmentAdmin, isStaffFlow]);
+  }, [values.batch, values.department, isStaffFlow]);
 
-  // Hidden Excel Upload handler
+  const activeSemester = isStaffFlow ? advisorContext?.derived_semester : values.semester;
+
   const handleExcelUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!fileInputRef.current) return;
@@ -104,21 +95,16 @@ const CreateUserForm = ({ onClose, refreshUsers, advisorContext }) => {
       return;
     }
 
-    const activeDept = isStaffFlow ? departmentStaff : departmentAdmin;
-    const activeBatch = isStaffFlow ? batchStaff : batchAdmin;
-    const activeCourse = isStaffFlow ? courseStaff : courseAdmin;
-    const activeSemester = isStaffFlow ? advisorContext?.derived_semester : semesterAdmin;
-
-    if (!activeDept || !activeBatch || !activeCourse || !activeSemester) {
+    if (!values.department || !values.batch || !values.course || !activeSemester) {
       toast.error("Please select Department, Batch, Course, and Semester before uploading Excel.");
       return;
     }
 
     const formData = new FormData();
     formData.append("file", file);
-    formData.append("department", activeDept);
-    formData.append("batch", String(activeBatch));
-    formData.append("course", activeCourse);
+    formData.append("department", values.department);
+    formData.append("batch", String(values.batch));
+    formData.append("course", values.course);
     formData.append("semester", String(activeSemester));
 
     try {
@@ -141,7 +127,6 @@ const CreateUserForm = ({ onClose, refreshUsers, advisorContext }) => {
     }
   };
 
-  // CSV error report downloader
   const downloadExcelErrorReport = () => {
     if (!uploadResult?.errors?.length) return;
     const header = "Row,Roll No,Reason\n";
@@ -158,29 +143,21 @@ const CreateUserForm = ({ onClose, refreshUsers, advisorContext }) => {
     document.body.removeChild(link);
   };
 
-  // Shared Submit Logic
   const handleCreate = async () => {
     setLoading(true);
     setUploadResult(null);
     setFormError("");
 
-    const activeDept = isStaffFlow ? departmentStaff : departmentAdmin;
-    const activeBatch = isStaffFlow ? batchStaff : batchAdmin;
-    const activeCourse = isStaffFlow ? courseStaff : courseAdmin;
-    const activeSemester = isStaffFlow ? advisorContext?.derived_semester : semesterAdmin;
-    const activePrefix = isStaffFlow ? prefixStaff : prefixAdmin;
+    const { department, batch, course, creationType, prefix, rangeFrom, rangeTo, rollNo, firstName, lastName, gender, registrationNo } = values;
 
-    if (!activeDept || !activeBatch || !activeCourse || !activeSemester) {
+    if (!department || !batch || !course || !activeSemester) {
       setFormError("Please fill all required department, batch, course, and semester fields.");
       setLoading(false);
       return;
     }
 
     if (creationType === "Range") {
-      const fromVal = isStaffFlow ? rangeFromStaff : rangeFromAdmin;
-      const toVal = isStaffFlow ? rangeToStaff : rangeToAdmin;
-
-      if (!activePrefix || !fromVal || !toVal) {
+      if (!prefix || !rangeFrom || !rangeTo) {
         setFormError("Please fill all range fields.");
         setLoading(false);
         return;
@@ -188,13 +165,13 @@ const CreateUserForm = ({ onClose, refreshUsers, advisorContext }) => {
 
       try {
         const res = await API.post("/students/range", {
-          prefix: activePrefix.trim(),
-          range_from: parseInt(fromVal, 10),
-          range_to: parseInt(toVal, 10),
-          course: activeCourse,
+          prefix: prefix.trim(),
+          range_from: parseInt(rangeFrom, 10),
+          range_to: parseInt(rangeTo, 10),
+          course,
           semester: parseInt(activeSemester, 10),
-          department: activeDept,
-          batch: String(activeBatch),
+          department,
+          batch: String(batch),
         });
         const data = res.data;
         await refreshUsers();
@@ -206,14 +183,7 @@ const CreateUserForm = ({ onClose, refreshUsers, advisorContext }) => {
         setLoading(false);
       }
     } else {
-      // Individual flow
-      const activeRollNo = isStaffFlow ? rollNo : rollNoAdmin;
-      const activeFirstName = isStaffFlow ? firstName : firstNameAdmin;
-      const activeLastName = isStaffFlow ? lastName : lastNameAdmin;
-      const activeGender = isStaffFlow ? gender : genderAdmin;
-      const activeRegNo = isStaffFlow ? registrationNo : registrationNoAdmin;
-
-      if (!activeRollNo || !activeFirstName) {
+      if (!rollNo || !firstName) {
         setFormError("Roll number and first name are required.");
         setLoading(false);
         return;
@@ -221,15 +191,15 @@ const CreateUserForm = ({ onClose, refreshUsers, advisorContext }) => {
 
       try {
         await API.post("/students/single", {
-          roll_no: activeRollNo.trim(),
-          first_name: activeFirstName.trim(),
-          last_name: activeLastName.trim(),
-          gender: activeGender,
-          registration_no: activeRegNo.trim(),
-          course: activeCourse,
+          roll_no: rollNo.trim(),
+          first_name: firstName.trim(),
+          last_name: (lastName || "").trim(),
+          gender,
+          registration_no: (registrationNo || "").trim(),
+          course,
           semester: parseInt(activeSemester, 10),
-          department: activeDept,
-          batch: String(activeBatch),
+          department,
+          batch: String(batch),
         });
         await refreshUsers();
         onClose();
@@ -242,292 +212,108 @@ const CreateUserForm = ({ onClose, refreshUsers, advisorContext }) => {
     }
   };
 
+  const isRange = values.creationType === "Range";
+
+  const fields = [
+    {
+      name: "department", label: "Department", type: "static",
+      hidden: () => !isStaffFlow,
+      value: () => values.department || "Loading...",
+    },
+    {
+      name: "department", label: "Department", type: "select",
+      hidden: () => isStaffFlow,
+      options: departments, placeholder: "Choose Department",
+    },
+    {
+      name: "batch", label: "Batch", type: "static",
+      hidden: () => !isStaffFlow,
+      value: () => values.batch || "Loading...",
+    },
+    {
+      name: "batch", label: "Batch", type: "text",
+      hidden: () => isStaffFlow,
+      placeholder: "e.g. 2023",
+    },
+    {
+      name: "course", label: "Course", type: "select",
+      options: ["B.E", "M.E"],
+    },
+    {
+      name: "semester", label: "Semester", type: "static",
+      hidden: () => !isStaffFlow,
+      value: () => advisorContext?.derived_semester || "—",
+      staticBadge: advisorContext?.derived_semester ? "auto" : null,
+    },
+    {
+      name: "semester", label: "Semester", type: "select",
+      hidden: () => isStaffFlow,
+      options: [...Array(8)].map((_, i) => String(i + 1)),
+      placeholder: "Choose Semester",
+    },
+    {
+      name: "creationType", label: "Creation Type", type: "select",
+      options: ["Range", "Individual"],
+    },
+    {
+      name: "prefix", label: "Roll No Prefix", type: "text",
+      hidden: () => !isRange,
+      placeholder: "e.g. 23CSE",
+    },
+    {
+      name: "rollNo", label: "Roll No", type: "text",
+      hidden: () => isRange,
+      placeholder: "e.g. 23CSE101",
+    },
+    {
+      name: "rangeFrom", label: "From (Number)", type: "number",
+      hidden: () => !isRange,
+      placeholder: "e.g. 1",
+    },
+    {
+      name: "rangeTo", label: "To (Number)", type: "number",
+      hidden: () => !isRange,
+      placeholder: "e.g. 60",
+    },
+    {
+      name: "registrationNo", label: "Registration No", type: "text",
+      hidden: () => isRange,
+      placeholder: "e.g. 910023104001",
+    },
+    {
+      name: "firstName", label: "First Name", type: "text",
+      hidden: () => isRange,
+      placeholder: "e.g. John",
+    },
+    {
+      name: "lastName", label: "Last Name", type: "text",
+      hidden: () => isRange,
+      placeholder: "e.g. Doe",
+    },
+    {
+      name: "gender", label: "Gender", type: "select",
+      hidden: () => isRange,
+      options: ["Male", "Female", "Other"],
+    },
+  ];
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="w-[700px] max-h-[90vh] overflow-y-auto bg-white rounded-xl shadow-lg p-6">
-        <h2 className="text-sm font-semibold text-blue-800 mb-4">
-          CREATE NEW STUDENT USER ({isStaffFlow ? "ADVISOR FLOW" : "ADMIN FLOW"})
-        </h2>
-
-        <div className="grid grid-cols-2 gap-4 text-sm">
-          {/* Row 1: Department & Batch */}
-          <div>
-            <label className="form-label font-semibold text-slate-700">Department</label>
-            {isStaffFlow ? (
-              <input
-                value={departmentStaff || "Loading..."}
-                readOnly
-                className="form-input-static w-full"
-              />
-            ) : (
-              <Dropdown
-                value={departmentAdmin}
-                onChange={setDepartmentAdmin}
-                options={departments}
-                placeholder="Choose Department"
-              />
-            )}
-          </div>
-
-          <div>
-            <label className="form-label font-semibold text-slate-700">Batch</label>
-            {isStaffFlow ? (
-              <input
-                value={batchStaff || "Loading..."}
-                readOnly
-                className="form-input-static w-full"
-              />
-            ) : (
-              <input
-                type="text"
-                value={batchAdmin}
-                onChange={(e) => setBatchAdmin(e.target.value)}
-                className="form-input w-full"
-                placeholder="e.g. 2023"
-              />
-            )}
-          </div>
-
-          {/* Row 2: Course & Semester */}
-          <div>
-            <label className="form-label font-semibold text-slate-700">Course</label>
-            {isStaffFlow ? (
-              <select
-                value={courseStaff}
-                onChange={(e) => setCourseStaff(e.target.value)}
-                className="form-input w-full"
-              >
-                <option value="B.E">B.E</option>
-                <option value="M.E">M.E</option>
-              </select>
-            ) : (
-              <select
-                value={courseAdmin}
-                onChange={(e) => setCourseAdmin(e.target.value)}
-                className="form-input w-full"
-              >
-                <option value="B.E">B.E</option>
-                <option value="M.E">M.E</option>
-              </select>
-            )}
-          </div>
-
-          <div>
-            <label className="form-label font-semibold text-slate-700">Semester</label>
-            {isStaffFlow ? (
-              <div className="form-input-static w-full">
-                <span>{advisorContext?.derived_semester || "—"}</span>
-                {advisorContext?.derived_semester && (
-                  <span className="ml-auto text-[10px] font-medium uppercase tracking-wide text-slate-400">
-                    auto
-                  </span>
-                )}
-              </div>
-            ) : (
-              <select
-                value={semesterAdmin}
-                onChange={(e) => setSemesterAdmin(e.target.value)}
-                className="form-input w-full"
-              >
-                <option value="" disabled>Choose Semester</option>
-                {[...Array(8)].map((_, i) => (
-                  <option key={i + 1} value={i + 1}>{i + 1}</option>
-                ))}
-              </select>
-            )}
-          </div>
-
-          {/* Row 3: Creation Type & Roll No Prefix / Roll No */}
-          <div>
-            <label className="form-label font-semibold text-slate-700">Creation Type</label>
-            <select
-              value={creationType}
-              onChange={(e) => {
-                setCreationType(e.target.value);
-                setUploadResult(null);
-              }}
-              className="form-input w-full"
-            >
-              <option value="Range">Range</option>
-              <option value="Individual">Individual</option>
-            </select>
-          </div>
-
-          {creationType === "Range" ? (
-            <div>
-              <label className="form-label font-semibold text-slate-700">Roll No Prefix</label>
-              {isStaffFlow ? (
-                <input
-                  value={prefixStaff}
-                  onChange={(e) => setPrefixStaff(e.target.value)}
-                  className="form-input w-full"
-                  placeholder="e.g. 23CSE"
-                />
-              ) : (
-                <input
-                  value={prefixAdmin}
-                  onChange={(e) => setPrefixAdmin(e.target.value)}
-                  className="form-input w-full"
-                  placeholder="e.g. 23CSE"
-                />
-              )}
-            </div>
-          ) : (
-            <div>
-              <label className="form-label font-semibold text-slate-700">Roll No</label>
-              {isStaffFlow ? (
-                <input
-                  value={rollNo}
-                  onChange={(e) => setRollNo(e.target.value)}
-                  className="form-input w-full"
-                  placeholder="e.g. 23CSE101"
-                />
-              ) : (
-                <input
-                  value={rollNoAdmin}
-                  onChange={(e) => setRollNoAdmin(e.target.value)}
-                  className="form-input w-full"
-                  placeholder="e.g. 23CSE101"
-                />
-              )}
-            </div>
-          )}
-
-          {/* Conditional Fields based on Creation Type */}
-          {creationType === "Range" ? (
-            <>
-              {/* Row 4 (Range): From & To */}
-              <div>
-                <label className="form-label font-semibold text-slate-700">From (Number)</label>
-                {isStaffFlow ? (
-                  <input
-                    type="number"
-                    value={rangeFromStaff}
-                    onChange={(e) => setRangeFromStaff(e.target.value)}
-                    className="form-input w-full"
-                    placeholder="e.g. 1"
-                  />
-                ) : (
-                  <input
-                    type="number"
-                    value={rangeFromAdmin}
-                    onChange={(e) => setRangeFromAdmin(e.target.value)}
-                    className="form-input w-full"
-                    placeholder="e.g. 1"
-                  />
-                )}
-              </div>
-
-              <div>
-                <label className="form-label font-semibold text-slate-700">To (Number)</label>
-                {isStaffFlow ? (
-                  <input
-                    type="number"
-                    value={rangeToStaff}
-                    onChange={(e) => setRangeToStaff(e.target.value)}
-                    className="form-input w-full"
-                    placeholder="e.g. 60"
-                  />
-                ) : (
-                  <input
-                    type="number"
-                    value={rangeToAdmin}
-                    onChange={(e) => setRangeToAdmin(e.target.value)}
-                    className="form-input w-full"
-                    placeholder="e.g. 60"
-                  />
-                )}
-              </div>
-            </>
-          ) : (
-            <>
-              {/* Row 4 (Individual): Registration No & First Name */}
-              <div>
-                <label className="form-label font-semibold text-slate-700">Registration No</label>
-                {isStaffFlow ? (
-                  <input
-                    value={registrationNo}
-                    onChange={(e) => setRegistrationNo(e.target.value)}
-                    className="form-input w-full"
-                    placeholder="e.g. 910023104001"
-                  />
-                ) : (
-                  <input
-                    value={registrationNoAdmin}
-                    onChange={(e) => setRegistrationNoAdmin(e.target.value)}
-                    className="form-input w-full"
-                    placeholder="e.g. 910023104001"
-                  />
-                )}
-              </div>
-
-              <div>
-                <label className="form-label font-semibold text-slate-700">First Name</label>
-                {isStaffFlow ? (
-                  <input
-                    value={firstName}
-                    onChange={(e) => setFirstName(e.target.value)}
-                    className="form-input w-full"
-                    placeholder="e.g. John"
-                  />
-                ) : (
-                  <input
-                    value={firstNameAdmin}
-                    onChange={(e) => setFirstNameAdmin(e.target.value)}
-                    className="form-input w-full"
-                    placeholder="e.g. John"
-                  />
-                )}
-              </div>
-
-              {/* Row 5 (Individual): Last Name & Gender */}
-              <div>
-                <label className="form-label font-semibold text-slate-700">Last Name</label>
-                {isStaffFlow ? (
-                  <input
-                    value={lastName}
-                    onChange={(e) => setLastName(e.target.value)}
-                    className="form-input w-full"
-                    placeholder="e.g. Doe"
-                  />
-                ) : (
-                  <input
-                    value={lastNameAdmin}
-                    onChange={(e) => setLastNameAdmin(e.target.value)}
-                    className="form-input w-full"
-                    placeholder="e.g. Doe"
-                  />
-                )}
-              </div>
-
-              <div>
-                <label className="form-label font-semibold text-slate-700">Gender</label>
-                {isStaffFlow ? (
-                  <select
-                    value={gender}
-                    onChange={(e) => setGender(e.target.value)}
-                    className="form-input w-full"
-                  >
-                    <option value="Male">Male</option>
-                    <option value="Female">Female</option>
-                    <option value="Other">Other</option>
-                  </select>
-                ) : (
-                  <select
-                    value={genderAdmin}
-                    onChange={(e) => setGenderAdmin(e.target.value)}
-                    className="form-input w-full"
-                  >
-                    <option value="Male">Male</option>
-                    <option value="Female">Female</option>
-                    <option value="Other">Other</option>
-                  </select>
-                )}
-              </div>
-            </>
-          )}
-
-          {/* Info bar */}
+    <DynamicForm
+      title={`CREATE NEW STUDENT USER (${isStaffFlow ? "ADVISOR FLOW" : "ADMIN FLOW"})`}
+      fields={fields}
+      values={values}
+      onChange={setField}
+      onSubmit={handleCreate}
+      submitting={loading}
+      formError={formError}
+      onClose={onClose}
+      secondaryAction={{
+        label: uploading ? "Uploading..." : "Upload Excel",
+        onClick: () => fileInputRef.current?.click(),
+        disabled: uploading || loading,
+      }}
+      extraContent={
+        <>
           <div className="col-span-2 text-xs text-slate-500 bg-slate-50 rounded-md px-3 py-2 border border-slate-200">
             Temporary password will be auto-generated as random secure string.
             <span className="block mt-1 text-blue-600 font-medium">
@@ -535,7 +321,14 @@ const CreateUserForm = ({ onClose, refreshUsers, advisorContext }) => {
             </span>
           </div>
 
-          {/* Excel upload result summary */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".xlsx"
+            className="hidden"
+            onChange={handleExcelUpload}
+          />
+
           {uploadResult && (
             <div className="col-span-2 rounded-md border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-700 space-y-2">
               <p className="font-semibold text-slate-800">
@@ -543,58 +336,18 @@ const CreateUserForm = ({ onClose, refreshUsers, advisorContext }) => {
                 <span className="text-green-600">{uploadResult.created} created</span>,{" "}
                 <span className="text-red-500">{uploadResult.failed} failed</span>
               </p>
-
               {uploadResult.errors?.length > 0 && (
                 <div>
-                  <button
-                    onClick={downloadExcelErrorReport}
-                    className="text-blue-600 underline text-xs font-semibold"
-                  >
+                  <button onClick={downloadExcelErrorReport} className="text-blue-600 underline text-xs font-semibold">
                     Download error report (.csv)
                   </button>
                 </div>
               )}
             </div>
           )}
-
-          {/* Form-level validation error (replaces alert()) */}
-          {formError && (
-            <div className="col-span-2 text-xs text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
-              ⚠ {formError}
-            </div>
-          )}
-
-          {/* Footer Buttons */}
-          <div className="col-span-2 flex justify-end gap-3 mt-4">
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".xlsx"
-              className="hidden"
-              onChange={handleExcelUpload}
-            />
-            <Button
-              label={uploading ? "Uploading..." : "Upload Excel"}
-              variant="outline-blue"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploading || loading}
-            />
-            <Button
-              label={loading ? "Creating..." : "Create"}
-              variant="primary"
-              onClick={handleCreate}
-              disabled={loading || uploading}
-            />
-            <Button
-              label="Cancel"
-              variant="danger"
-              onClick={onClose}
-              disabled={loading || uploading}
-            />
-          </div>
-        </div>
-      </div>
-    </div>
+        </>
+      }
+    />
   );
 };
 

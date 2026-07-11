@@ -334,7 +334,7 @@ const UserManagement = () => {
   if (isAdmin) {
     // ──────────────── ADMIN USER MANAGEMENT LAYOUT ────────────────
     return (
-      <div className="space-y-2">
+      <div className="space-y-4">
         {fetchError && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md text-sm">
             {fetchError}
@@ -431,7 +431,7 @@ const UserManagement = () => {
 
   // ──────────────── STAFF USER MANAGEMENT LAYOUT ────────────────
   return (
-    <div className="space-y-2">
+    <div className="space-y-4">
       {fetchError && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md text-sm">
           {fetchError}

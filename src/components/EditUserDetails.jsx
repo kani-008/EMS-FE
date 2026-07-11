@@ -63,19 +63,12 @@ const EditUserDetails = ({ user, mode, onClose, onSaved }) => {
     load();
   }, []);
 
-  if (!user) return null;
-
-  const isEdit = mode === "edit";
-  // API returns userRole as "STUDENT" (uppercase, matching the user_role table)
-  // — comparing against "Student" here previously meant this NEVER matched,
-  // so Edit silently fell through to read-only Info mode for every user.
-  const isStudentRole = String(user.userRole || "").toUpperCase() === "STUDENT";
-
   const [derivedCurrentYear, setDerivedCurrentYear] = useState(null);
   const [derivedSemester, setDerivedSemester] = useState(null);
 
   useEffect(() => {
     const fetchDerivation = async () => {
+      if (!user) return;
       const batchVal = user?.batch;
       const courseVal = course || user?.course;
       if (batchVal && courseVal && batchVal !== "N/A") {
@@ -99,6 +92,14 @@ const EditUserDetails = ({ user, mode, onClose, onSaved }) => {
     };
     fetchDerivation();
   }, [user?.batch, course, user?.course]);
+
+  if (!user) return null;
+
+  const isEdit = mode === "edit";
+  // API returns userRole as "STUDENT" (uppercase, matching the user_role table)
+  // — comparing against "Student" here previously meant this NEVER matched,
+  // so Edit silently fell through to read-only Info mode for every user.
+  const isStudentRole = String(user.userRole || "").toUpperCase() === "STUDENT";
 
   // Resolve roll_no for the request
   const rollNo = user.userId || user.roll_no;
@@ -289,27 +290,23 @@ const EditUserDetails = ({ user, mode, onClose, onSaved }) => {
             {/* Gender — editable dropdown */}
             <div>
               <label className="form-label">Gender</label>
-              <select
+              <Dropdown
                 value={gender}
-                onChange={(e) => setGender(e.target.value)}
-                className="form-input w-full"
-              >
-                <option value="Male">Male</option>
-                <option value="Female">Female</option>
-              </select>
+                onChange={setGender}
+                options={["Male", "Female"]}
+                placeholder="Choose Gender"
+              />
             </div>
 
             {/* Course — editable dropdown */}
             <div>
               <label className="form-label">Course</label>
-              <select
+              <Dropdown
                 value={course}
-                onChange={(e) => setCourse(e.target.value)}
-                className="form-input w-full"
-              >
-                <option value="B.E">B.E</option>
-                <option value="M.E">M.E</option>
-              </select>
+                onChange={setCourse}
+                options={["B.E", "M.E"]}
+                placeholder="Choose Course"
+              />
             </div>
 
             {/* ── Change Password Section ─────────────────────────────────────── */}

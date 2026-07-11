@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { createPortal } from "react-dom";
 import Button from "./Button";
+import Dropdown from "./Dropdown";
 
 const RequestActionModal = ({
   mode,        // "forward" | "accept" | "decline" | "edit" | "info" | "success" | "failed" | "delete"
@@ -82,16 +83,18 @@ const RequestActionModal = ({
               </h2>
 
               {isForward && (
-                <select
-                  value={forwardedTo}
-                  onChange={(e) => setForwardedTo(e.target.value)}
-                  className="h-9 rounded-md border px-3 text-sm"
-                >
-                  <option value="">Forward to…</option>
-                  <option value="hod">HOD</option>
-                  <option value="principal">Principal</option>
-                  <option value="advisor">Advisor</option>
-                </select>
+                <div className="w-48">
+                  <Dropdown
+                    value={forwardedTo}
+                    onChange={setForwardedTo}
+                    options={[
+                      { value: "hod", label: "HOD" },
+                      { value: "principal", label: "Principal" },
+                      { value: "advisor", label: "Advisor" },
+                    ]}
+                    placeholder="Forward to…"
+                  />
+                </div>
               )}
             </div>
           )}

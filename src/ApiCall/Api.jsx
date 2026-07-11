@@ -4,10 +4,20 @@ import axios from "axios";
 export const API_URL = import.meta.env.VITE_API_URL;
 
 // ── Axios instance ─────────────────────────────────────────────────────────────
+// withCredentials so the httpOnly refreshToken cookie is sent/received on
+// every request — the refresh token itself is never read or stored by JS.
 const API = axios.create({
   baseURL: API_URL,
   headers: { "Content-Type": "application/json" },
+  withCredentials: true,
 });
+
+// ── Shared silent-refresh call ──────────────────────────────────────────────
+// Used both by the 401 interceptor below and by AuthContext on app load.
+// The refresh token travels only as the httpOnly cookie — nothing is read
+// from or written to localStorage for it.
+export const refreshAccessToken = () =>
+  axios.post(`${API_URL}/auth/refresh-token`, {}, { withCredentials: true });
 
 // ── Request interceptor — attach Bearer token ───────────────────────────────
 API.interceptors.request.use(
@@ -76,18 +86,10 @@ API.interceptors.response.use(
         originalRequest._retry = true;
         isRefreshing = true;
 
-        const refreshToken = localStorage.getItem("ems_refresh_token");
-        if (!refreshToken) {
-          isRefreshing = false;
-          if (_logout) {
-            _logout();
-          }
-          return Promise.reject(err);
-        }
-
         try {
-          // Use direct axios call to avoid request interceptor applying old bearer token
-          const refreshRes = await axios.post(`${API_URL}/auth/refresh-token`, { refreshToken });
+          // Direct axios call (bypasses the request interceptor's stale bearer
+          // token); the refresh token itself rides along as the httpOnly cookie.
+          const refreshRes = await refreshAccessToken();
           if (refreshRes.data.success && refreshRes.data.accessToken) {
             const newToken = refreshRes.data.accessToken;
             localStorage.setItem("ems_access_token", newToken);

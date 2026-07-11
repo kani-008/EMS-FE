@@ -78,7 +78,7 @@ const FilterBar = ({
   })();
 
   return (
-    <div className="px-4 py-3 pb-0 -mx-6">
+    <div className="px-4 py-3 -mx-6">
       <div className="flex items-center justify-between w-full">
         {/* LEFT — Pagination + Filters */}
         <div className="flex items-center gap-3 mr-6">
